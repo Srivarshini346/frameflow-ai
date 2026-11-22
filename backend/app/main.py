@@ -86,7 +86,8 @@ async def generic_exception_handler(request: Request, exc: Exception):
         content={
             "error": {
                 "code": "INTERNAL_SERVER_ERROR",
-                "message": str(exc),
+                "message": "An internal server error occurred",
+                "retryable": True,
                 "correlation_id": corr_id
             }
         }

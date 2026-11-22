@@ -1,12 +1,15 @@
 import uuid
+import json
+import base64
 from typing import Optional, List
-from fastapi import APIRouter, Header, Response, status, Request
+from fastapi import APIRouter, Header, Response, status, Request, UploadFile, File, Form
 from app.models.api_schemas import (
-    BrollJobCreateRequest, JobDetailResponse, JobResultResponse, SceneReplaceRequest
+    BrollJobCreateRequest, JobDetailResponse, JobResultResponse, SceneReplaceRequest,
+    AspectRatio, VoiceConfig, VisualPromptStyle, CaptionConfig
 )
 from app.services.job_manager import job_manager
 from app.core.idempotency import idempotency_store
-from app.core.exceptions import ValidationError, JobNotFoundError
+from app.core.exceptions import ValidationError, EmptyScriptError, JobNotFoundError, IdempotencyKeyReusedError
 from app.core.logger import logger
 
 router = APIRouter(prefix="", tags=["B-roll Jobs"])
@@ -21,24 +24,30 @@ async def create_broll_job(
 ):
     correlation_id = x_correlation_id or f"corr_{uuid.uuid4().hex[:12]}"
 
-    # Validate input: must have either script_text, audio_url, or audio_base64
-    has_script = bool(request_data.script_text and request_data.script_text.strip())
+    # Check for empty script string
+    has_script_field = request_data.script is not None or request_data.script_text is not None
+    script_content = (request_data.script or request_data.script_text or "").strip()
     has_audio_url = bool(request_data.audio_url and request_data.audio_url.strip())
     has_audio_b64 = bool(request_data.audio_base64 and request_data.audio_base64.strip())
+    has_scenes = bool(request_data.scenes and len(request_data.scenes) > 0)
 
-    if not (has_script or has_audio_url or has_audio_b64):
-        raise ValidationError(
-            "At least one narration input (script_text, audio_url, or audio_base64) is required",
-            correlation_id=correlation_id
-        )
+    # If neither audio nor scenes are given, script must be non-empty
+    if not (has_audio_url or has_audio_b64 or has_scenes):
+        if not script_content:
+            raise EmptyScriptError(
+                "Script text is empty. Please provide a script, scenes, or an audio voiceover.",
+                correlation_id=correlation_id
+            )
 
-    # Idempotency check
+    # Check idempotency
+    payload_dict = request_data.dict()
     if idempotency_key:
-        cached = idempotency_store.get(idempotency_key)
+        cached = idempotency_store.check_or_set(idempotency_key, payload_dict)
         if cached:
-            logger.info(f"Returning idempotent response for key: {idempotency_key}")
+            logger.info(f"Returning idempotent cached response for key: {idempotency_key}")
             response.headers["X-Idempotency-Hit"] = "true"
             response.headers["X-Correlation-ID"] = correlation_id
+            response.headers["Location"] = f"/api/v1/jobs/{cached['job_id']}"
             return cached
 
     job_id = f"job_{uuid.uuid4().hex[:10]}"
@@ -47,9 +56,61 @@ async def create_broll_job(
     response.headers["Location"] = f"/api/v1/jobs/{job_id}"
     response.headers["X-Correlation-ID"] = correlation_id
 
-    # Cache for idempotency
+    # Cache response for idempotency
     if idempotency_key:
-        idempotency_store.set(idempotency_key, job_detail.dict())
+        idempotency_store.store_response(idempotency_key, payload_dict, job_detail.dict())
+
+    return job_detail
+
+@router.post("/broll/jobs/upload", status_code=status.HTTP_202_ACCEPTED, response_model=JobDetailResponse)
+async def create_broll_job_with_audio_file(
+    response: Response,
+    audio_file: UploadFile = File(...),
+    script: Optional[str] = Form(None),
+    aspect_ratios: Optional[str] = Form(None),
+    style: Optional[str] = Form("cinematic"),
+    avoid: Optional[str] = Form(None),
+    callback_url: Optional[str] = Form(None),
+    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
+    x_correlation_id: Optional[str] = Header(None, alias="X-Correlation-ID")
+):
+    """
+    Multipart audio file upload endpoint (MP3, WAV, M4A).
+    """
+    correlation_id = x_correlation_id or f"corr_{uuid.uuid4().hex[:12]}"
+    content = await audio_file.read()
+    b64_audio = base64.b64encode(content).decode("utf-8")
+
+    ratios = [AspectRatio(r.strip()) for r in aspect_ratios.split(",")] if aspect_ratios else [
+        AspectRatio.LANDSCAPE_16_9, AspectRatio.PORTRAIT_9_16, AspectRatio.SQUARE_1_1
+    ]
+    avoid_list = [a.strip() for a in avoid.split(",") if a.strip()] if avoid else []
+
+    req = BrollJobCreateRequest(
+        script=script,
+        audio_base64=b64_audio,
+        audio_filename=audio_file.filename,
+        aspect_ratios=ratios,
+        style=VisualPromptStyle(style or "cinematic"),
+        avoid=avoid_list,
+        callback_url=callback_url
+    )
+
+    if idempotency_key:
+        cached = idempotency_store.check_or_set(idempotency_key, {"filename": audio_file.filename, "size": len(content)})
+        if cached:
+            response.headers["X-Idempotency-Hit"] = "true"
+            response.headers["X-Correlation-ID"] = correlation_id
+            return cached
+
+    job_id = f"job_{uuid.uuid4().hex[:10]}"
+    job_detail = job_manager.create_job(req, correlation_id=correlation_id, job_id=job_id)
+
+    response.headers["Location"] = f"/api/v1/jobs/{job_id}"
+    response.headers["X-Correlation-ID"] = correlation_id
+
+    if idempotency_key:
+        idempotency_store.store_response(idempotency_key, {"filename": audio_file.filename, "size": len(content)}, job_detail.dict())
 
     return job_detail
 

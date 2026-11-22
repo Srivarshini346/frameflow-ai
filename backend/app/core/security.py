@@ -2,9 +2,12 @@ import hmac
 import hashlib
 from typing import Optional
 
+WEBHOOK_HEADER_NAME = "X-IncuBrix-Signature"
+
 def generate_webhook_signature(payload_bytes: bytes, secret: str) -> str:
     """
     Generate HMAC-SHA256 signature for webhook payload verification.
+    Format: sha256=<hex_digest>
     """
     mac = hmac.new(secret.encode("utf-8"), msg=payload_bytes, digestmod=hashlib.sha256)
     return "sha256=" + mac.hexdigest()

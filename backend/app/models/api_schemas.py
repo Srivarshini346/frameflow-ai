@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 class JobStatus(str, Enum):
     QUEUED = "queued"
@@ -32,34 +32,97 @@ class VoiceConfig(BaseModel):
     pitch: float = Field(default=0.0, ge=-10.0, le=10.0)
 
 class CaptionConfig(BaseModel):
-    enabled: bool = True
-    burned_in: bool = True
+    burn_in: bool = True
+    srt: bool = True
     font_size: int = Field(default=32, ge=16, le=72)
     font_color: str = "#FFFFFF"
     background_box: bool = True
     subtitle_style: str = "highlight_current"
 
+    @model_validator(mode="before")
+    @classmethod
+    def handle_aliases(cls, data: Any):
+        if isinstance(data, dict):
+            if "burned_in" in data and "burn_in" not in data:
+                data["burn_in"] = data["burned_in"]
+            if "enabled" in data and "srt" not in data:
+                data["srt"] = data["enabled"]
+        return data
+
 class SceneInputRequest(BaseModel):
-    narration_text: str
-    custom_visual_description: Optional[str] = None
+    text: str = ""
+    visual_hint: Optional[str] = None
     manual_keywords: Optional[List[str]] = None
 
+    @model_validator(mode="before")
+    @classmethod
+    def handle_aliases(cls, data: Any):
+        if isinstance(data, dict):
+            if "narration_text" in data and not data.get("text"):
+                data["text"] = data["narration_text"]
+            if "custom_visual_description" in data and not data.get("visual_hint"):
+                data["visual_hint"] = data["custom_visual_description"]
+        return data
+
 class BrollJobCreateRequest(BaseModel):
-    script_text: Optional[str] = Field(default=None, description="Plain text narration script")
-    audio_url: Optional[str] = Field(default=None, description="Direct URL to pre-recorded audio file")
-    audio_base64: Optional[str] = Field(default=None, description="Base64-encoded audio bytes (MP3, WAV, M4A)")
-    audio_filename: Optional[str] = None
-    scenes: Optional[List[SceneInputRequest]] = Field(default=None, description="Explicit manual scenes if not auto-segmenting")
-    voice_config: VoiceConfig = Field(default_factory=VoiceConfig)
+    script: Optional[str] = None
+    scenes: Optional[List[SceneInputRequest]] = None
+    voice: VoiceConfig = Field(default_factory=VoiceConfig)
     aspect_ratios: List[AspectRatio] = Field(
         default=[AspectRatio.LANDSCAPE_16_9, AspectRatio.PORTRAIT_9_16, AspectRatio.SQUARE_1_1]
     )
     style: VisualPromptStyle = VisualPromptStyle.CINEMATIC
-    style_instructions: Optional[str] = Field(default=None, description="Global visual mood directions")
-    avoid_instructions: Optional[List[str]] = Field(default=None, description="Visual keywords/concepts to avoid")
-    caption_config: CaptionConfig = Field(default_factory=CaptionConfig)
-    webhook_url: Optional[str] = None
+    avoid: List[str] = Field(default_factory=list)
+    captions: CaptionConfig = Field(default_factory=CaptionConfig)
+    audio_url: Optional[str] = None
+    callback_url: Optional[str] = None
     webhook_secret: Optional[str] = None
+
+    # Legacy & Multipart Aliases
+    script_text: Optional[str] = None
+    audio_base64: Optional[str] = None
+    audio_filename: Optional[str] = None
+    voice_config: Optional[VoiceConfig] = None
+    style_instructions: Optional[str] = None
+    avoid_instructions: Optional[List[str]] = None
+    caption_config: Optional[CaptionConfig] = None
+    webhook_url: Optional[str] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def map_aliases(cls, data: Any):
+        if isinstance(data, dict):
+            # Script
+            if not data.get("script") and data.get("script_text"):
+                data["script"] = data["script_text"]
+            elif not data.get("script_text") and data.get("script"):
+                data["script_text"] = data["script"]
+
+            # Voice
+            if not data.get("voice") and data.get("voice_config"):
+                data["voice"] = data["voice_config"]
+            elif not data.get("voice_config") and data.get("voice"):
+                data["voice_config"] = data["voice"]
+
+            # Avoid
+            if not data.get("avoid") and data.get("avoid_instructions"):
+                data["avoid"] = data["avoid_instructions"]
+            elif not data.get("avoid_instructions") and data.get("avoid"):
+                data["avoid_instructions"] = data["avoid"]
+
+            # Captions
+            if not data.get("captions") and data.get("caption_config"):
+                data["captions"] = data["caption_config"]
+            elif not data.get("caption_config") and data.get("captions"):
+                data["caption_config"] = data["captions"]
+
+            # Webhook
+            if not data.get("callback_url") and data.get("webhook_url"):
+                data["callback_url"] = data["webhook_url"]
+            elif not data.get("webhook_url") and data.get("callback_url"):
+                data["webhook_url"] = data["callback_url"]
+
+        return data
 
 class FootageClip(BaseModel):
     clip_id: str
@@ -75,6 +138,7 @@ class FootageClip(BaseModel):
     attribution: str
     is_commercial_cleared: bool = True
     is_ai_generated: bool = False
+    watermark: bool = False
     tags: List[str] = []
 
 class SceneDetail(BaseModel):
@@ -86,10 +150,18 @@ class SceneDetail(BaseModel):
     visual_description: str
     search_query: str
     selected_footage: Optional[FootageClip] = None
-    ai_generated: bool = False
-    relevance_score: float = Field(default=0.0, ge=0.0, le=1.0)
-    vlm_score: Optional[float] = None
+    source: str = "mock"
+    clip_id: str = ""
+    source_url: str = ""
+    licence: str = ""
+    attribution: str = ""
+    is_ai_generated: bool = False
+    watermark: bool = False
+    selection_rule: str = "CLIP image-text cosine similarity ranking"
     selection_reason: str = ""
+    relevance_score: float = Field(default=0.0, ge=0.0, le=1.0)
+    clip_rating: int = Field(default=3, ge=1, le=5)
+    warnings: List[str] = Field(default_factory=list)
     status: str = "ready"
 
 class SceneReplaceRequest(BaseModel):
@@ -109,14 +181,6 @@ class JobDetailResponse(BaseModel):
     created_at: str
     updated_at: str
 
-class VideoUrlMap(BaseModel):
-    ratio_16_9: Optional[str] = Field(default=None, alias="16:9")
-    ratio_9_16: Optional[str] = Field(default=None, alias="9:16")
-    ratio_1_1: Optional[str] = Field(default=None, alias="1:1")
-
-    class Config:
-        populate_by_name = True
-
 class JobResultResponse(BaseModel):
     job_id: str
     status: JobStatus
@@ -126,7 +190,7 @@ class JobResultResponse(BaseModel):
     manifest_json_url: Optional[str] = None
     metrics: Dict[str, Any] = Field(default_factory=dict)
     licences: List[Dict[str, Any]] = Field(default_factory=list)
-    quality_report: Dict[str, Any] = Field(default_factory=dict)
+    quality_report: Dict[str, Any] = Field(default_factory=list)
 
 class HealthStatus(BaseModel):
     status: str
@@ -134,4 +198,5 @@ class HealthStatus(BaseModel):
     ffmpeg_available: bool
     ffmpeg_version: Optional[str] = None
     storage_writable: bool
-    active_jobs: int
+    database_connected: bool = True
+    active_jobs: int = 0

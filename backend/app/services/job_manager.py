@@ -5,26 +5,30 @@ import asyncio
 import sqlite3
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Set
+
 from app.models.api_schemas import (
     JobStatus, JobDetailResponse, JobResultResponse,
-    BrollJobCreateRequest, SceneDetail, AspectRatio, FootageClip
+    BrollJobCreateRequest, SceneDetail, AspectRatio, FootageClip,
+    VisualPromptStyle, LanguageCode, CaptionConfig, VoiceConfig
 )
 from app.services.audio_service import audio_service
+from app.services.asr_service import get_asr_adapter, validate_audio_file
 from app.services.scene_engine import scene_engine
 from app.services.footage_service import footage_service
 from app.services.video_engine import video_engine
 from app.services.caption_service import caption_service
 from app.services.storage_service import storage_service
 from app.services.webhook_service import webhook_service
+from app.services.video_validator import video_validator
 from app.config import settings
-from app.core.exceptions import FrameFlowError, JobNotFoundError, ValidationError
+from app.core.exceptions import FrameFlowError, JobNotFoundError, ValidationError, EmptyScriptError
 from app.core.logger import logger
 
 class JobManager:
     """
     Central background job orchestrator.
-    Manages queued, running, succeeded, failed states, scene progress,
-    incremental clip rerendering, and persistence.
+    Manages queued, running, succeeded, failed states, stage progress,
+    scene timing, incremental clip rerendering, persistence, and deliverable validation.
     """
 
     def __init__(self):
@@ -134,6 +138,7 @@ class JobManager:
         Incremental rerender: Replaces footage for a single scene and dynamically
         reassembles full videos without re-rendering unaffected scenes.
         """
+        start_time = time.time()
         job = self._jobs.get(job_id) or self._load_from_db(job_id)
         if not job:
             raise JobNotFoundError(job_id)
@@ -155,28 +160,26 @@ class JobManager:
 
         job_dir = storage_service.get_job_dir(job_id)
         seen_clips = {s["selected_footage"]["clip_id"] for s in scenes if s.get("selected_footage")}
-        # Remove current scene's clip so it can be replaced
         if target_scene.selected_footage:
             seen_clips.discard(target_scene.selected_footage.clip_id)
 
-        # Find new footage
-        new_clip = await footage_service.find_best_footage_for_scene(target_scene, seen_clips)
+        avoid_list = job["request"].get("avoid") or job["request"].get("avoid_instructions") or []
+        new_clip = await footage_service.find_best_footage_for_scene(target_scene, seen_clips, avoid_list=avoid_list)
         await footage_service.ensure_clip_downloaded(new_clip, job_dir)
         target_scene.selected_footage = new_clip
         scenes[target_scene_idx] = target_scene.dict()
 
-        # Re-render ONLY this scene's clip for each aspect ratio
         aspect_ratios = [AspectRatio(r) for r in job["request"].get("aspect_ratios", ["16:9", "9:16", "1:1"])]
         audio_path = job["audio_path"]
         srt_path = job["srt_path"]
-        caption_cfg = job["caption_config"]
+        caption_cfg = CaptionConfig(**job["request"].get("captions", job["request"].get("caption_config", {})))
 
+        validation_reports: Dict[str, Any] = {}
         for ar in aspect_ratios:
             ratio_tag = ar.value.replace(":", "_")
             clip_path = str(job_dir / f"clip_sc{scene_number}_{ratio_tag}.mp4")
             video_engine.render_scene_clip(target_scene, ar, clip_path)
 
-            # Re-assemble full video
             all_clip_paths = [
                 str(job_dir / f"clip_sc{s['scene_number']}_{ratio_tag}.mp4") for s in scenes
             ]
@@ -184,13 +187,16 @@ class JobManager:
             video_engine.assemble_full_video(
                 all_clip_paths, audio_path, srt_path, caption_cfg, ar, final_out, job_dir
             )
+            val = video_validator.validate_video(final_out, expected_ar=ar.value)
+            validation_reports[ar.value] = val.to_dict()
 
-        # Update timeline.json & manifest.json
         scene_objs = [SceneDetail(**s) for s in scenes]
         timeline_path = str(job_dir / "timeline.json")
         manifest_path = str(job_dir / "manifest.json")
         video_engine.build_timeline_json(scene_objs, timeline_path)
-        video_engine.build_manifest_json(job_id, scene_objs, 1.5, job["request"], manifest_path)
+        video_engine.build_manifest_json(
+            job_id, scene_objs, time.time() - start_time, job["request"], validation_reports, manifest_path
+        )
 
         job["updated_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         self._jobs[job_id] = job
@@ -212,14 +218,19 @@ class JobManager:
         job = self._jobs[job_id]
         start_time = time.time()
         job_dir = storage_service.get_job_dir(job_id)
+        stage_timings: Dict[str, float] = {}
 
         try:
+            t0 = time.time()
             self._update_stage(job_id, "validating", 5, JobStatus.RUNNING)
             req = job["request"]
+            stage_timings["validating"] = round(time.time() - t0, 3)
 
             # 1. Audio and narration processing
+            t1 = time.time()
             audio_path = str(job_dir / "narration.wav")
             audio_duration = 5.0
+            script_text = req.get("script") or req.get("script_text")
 
             if req.get("audio_base64"):
                 self._update_stage(job_id, "transcribing_narration", 15)
@@ -227,76 +238,100 @@ class JobManager:
                 raw_audio_path = str(job_dir / (req.get("audio_filename") or "uploaded_audio.wav"))
                 with open(raw_audio_path, "wb") as f:
                     f.write(raw_bytes)
-                audio_props = audio_service.validate_audio_file(raw_audio_path)
+                audio_props = validate_audio_file(raw_audio_path)
                 audio_path = raw_audio_path
                 audio_duration = audio_props["duration"]
+
+                # Run ASR adapter to transcribe narration
+                asr = get_asr_adapter()
+                asr_result = asr.transcribe(audio_path)
+                if not script_text:
+                    script_text = asr_result.text
             elif req.get("audio_url"):
                 self._update_stage(job_id, "fetching_audio", 15)
-                # Fetch audio
                 import httpx
                 async with httpx.AsyncClient(timeout=20.0) as client:
                     res = await client.get(req["audio_url"])
                     raw_audio_path = str(job_dir / "remote_audio.wav")
                     with open(raw_audio_path, "wb") as f:
                         f.write(res.content)
-                audio_props = audio_service.validate_audio_file(raw_audio_path)
+                audio_props = validate_audio_file(raw_audio_path)
                 audio_path = raw_audio_path
                 audio_duration = audio_props["duration"]
+
+                asr = get_asr_adapter()
+                asr_result = asr.transcribe(audio_path)
+                if not script_text:
+                    script_text = asr_result.text
             else:
                 self._update_stage(job_id, "synthesizing_speech", 15)
-                script_text = req.get("script_text")
                 if not script_text or not script_text.strip():
-                    raise ValidationError("Either script_text, audio_url, or audio_base64 must be provided")
+                    raise EmptyScriptError("Either script, scenes, audio_url, or audio upload must be provided")
 
-                from app.models.api_schemas import VoiceConfig
-                voice_cfg = VoiceConfig(**req.get("voice_config", {}))
+                voice_dict = req.get("voice") or req.get("voice_config") or {}
+                voice_cfg = VoiceConfig(**voice_dict)
                 tts_res = await audio_service.generate_speech(script_text, voice_cfg, audio_path)
                 audio_duration = tts_res["duration"]
 
             job["audio_path"] = audio_path
             job["audio_duration"] = audio_duration
+            stage_timings["audio_processing"] = round(time.time() - t1, 3)
 
             # 2. Intelligent Scene Segmentation
+            t2 = time.time()
             self._update_stage(job_id, "segmenting_scenes", 30)
-            from app.models.api_schemas import VisualPromptStyle, LanguageCode, CaptionConfig
-            style = VisualPromptStyle(req.get("style", "cinematic"))
-            lang = LanguageCode(req.get("voice_config", {}).get("language", "en"))
+            style_val = req.get("style") or "cinematic"
+            style = VisualPromptStyle(style_val if isinstance(style_val, str) else style_val.value)
             
-            script = req.get("script_text") or "Narration voiceover b-roll visual story"
+            voice_dict = req.get("voice") or req.get("voice_config") or {}
+            lang_code = voice_dict.get("language", "en")
+            lang = LanguageCode(lang_code.value if hasattr(lang_code, "value") else lang_code)
+            
+            avoid_list = req.get("avoid") or req.get("avoid_instructions") or []
+            
             scenes: List[SceneDetail] = scene_engine.segment_script_into_scenes(
-                script_text=script,
+                script_text=script_text or "Narration voiceover b-roll visual story",
                 total_audio_duration=audio_duration,
                 style=style,
                 style_instructions=req.get("style_instructions"),
-                avoid_instructions=req.get("avoid_instructions"),
+                avoid_instructions=avoid_list,
                 language=lang
             )
 
             job["scenes"] = [s.dict() for s in scenes]
             self._persist(job_id)
+            stage_timings["scene_segmentation"] = round(time.time() - t2, 3)
 
             # 3. Footage Discovery & Licensing
+            t3 = time.time()
             self._update_stage(job_id, "sourcing_footage", 50)
             seen_clips: Set[str] = set()
             for sc in scenes:
-                clip = await footage_service.find_best_footage_for_scene(sc, seen_clips)
+                clip = await footage_service.find_best_footage_for_scene(sc, seen_clips, avoid_list=avoid_list)
                 await footage_service.ensure_clip_downloaded(clip, job_dir)
 
             job["scenes"] = [s.dict() for s in scenes]
             self._persist(job_id)
+            stage_timings["footage_discovery"] = round(time.time() - t3, 3)
 
             # 4. Generate Captions SRT
+            t4 = time.time()
             self._update_stage(job_id, "generating_captions", 65)
             srt_path = str(job_dir / "captions.srt")
             caption_service.generate_srt(scenes, srt_path)
             job["srt_path"] = srt_path
-            caption_cfg = CaptionConfig(**req.get("caption_config", {}))
+            cap_dict = req.get("captions") or req.get("caption_config") or {}
+            caption_cfg = CaptionConfig(**cap_dict)
             job["caption_config"] = caption_cfg
+            stage_timings["caption_generation"] = round(time.time() - t4, 3)
 
             # 5. FFmpeg Video Compositor for All Requested Aspect Ratios
+            t5 = time.time()
             self._update_stage(job_id, "rendering_videos", 75)
-            aspect_ratios = [AspectRatio(r) for r in req.get("aspect_ratios", ["16:9", "9:16", "1:1"])]
+            ratios_raw = req.get("aspect_ratios", ["16:9", "9:16", "1:1"])
+            aspect_ratios = [AspectRatio(r.value if hasattr(r, "value") else r) for r in ratios_raw]
             video_urls: Dict[str, str] = {}
+            validation_reports: Dict[str, Any] = {}
 
             for ar in aspect_ratios:
                 ratio_tag = ar.value.replace(":", "_")
@@ -318,35 +353,60 @@ class JobManager:
                     output_video_path=final_video_path,
                     job_dir=job_dir
                 )
-                video_urls[ar.value] = storage_service.get_public_url(final_video_path)
+
+                # Post-render FFprobe automated quality validation
+                val = video_validator.validate_video(final_video_path, expected_ar=ar.value)
+                validation_reports[ar.value] = val.to_dict()
+
+                # Upload to MinIO/S3 or Local Storage
+                video_urls[ar.value] = storage_service.upload_file(final_video_path)
+
+            stage_timings["video_rendering"] = round(time.time() - t5, 3)
 
             # 6. Build Timeline & Manifest
+            t6 = time.time()
             self._update_stage(job_id, "finalizing_deliverables", 90)
             elapsed = time.time() - start_time
             timeline_path = str(job_dir / "timeline.json")
             manifest_path = str(job_dir / "manifest.json")
             
             timeline_data = video_engine.build_timeline_json(scenes, timeline_path)
-            manifest_data = video_engine.build_manifest_json(job_id, scenes, elapsed, req, manifest_path)
+            manifest_data = video_engine.build_manifest_json(
+                job_id=job_id,
+                scenes=scenes,
+                processing_time_s=elapsed,
+                request_params=req,
+                validation_reports=validation_reports,
+                output_path=manifest_path,
+                seed=42,
+                stage_timings=stage_timings
+            )
+
+            # Upload metadata deliverables
+            srt_url = storage_service.upload_file(srt_path)
+            timeline_url = storage_service.upload_file(timeline_path)
+            manifest_url = storage_service.upload_file(manifest_path)
+            stage_timings["finalizing_deliverables"] = round(time.time() - t6, 3)
 
             # 7. Complete Succeeded Deliverables
             result_payload = {
                 "video_urls": video_urls,
-                "captions_srt_url": storage_service.get_public_url(srt_path),
-                "timeline_json_url": storage_service.get_public_url(timeline_path),
-                "manifest_json_url": storage_service.get_public_url(manifest_path),
+                "captions_srt_url": srt_url,
+                "timeline_json_url": timeline_url,
+                "manifest_json_url": manifest_url,
                 "metrics": {
                     "processing_time_seconds": round(elapsed, 2),
                     "total_scenes": len(scenes),
                     "total_duration": audio_duration,
-                    "estimated_cost_usd": 0.00
+                    "estimated_cost_usd": manifest_data.get("estimated_cost_usd", 0.00),
+                    "stage_timings": stage_timings
                 },
                 "licences": manifest_data.get("licences_and_rights", []),
                 "quality_report": {
                     "average_relevance_score": round(sum(s.relevance_score for s in scenes) / max(1, len(scenes)), 2),
-                    "average_vlm_score": round(sum(s.vlm_score or 0.8 for s in scenes) / max(1, len(scenes)), 2),
                     "commercial_cleared_ratio": 1.0,
-                    "duplicate_clip_count": 0
+                    "duplicate_clip_count": 0,
+                    "validation": validation_reports
                 }
             }
 
@@ -355,10 +415,11 @@ class JobManager:
             self._update_stage(job_id, "completed", 100, JobStatus.SUCCEEDED)
 
             # 8. Webhook notification
-            if req.get("webhook_url"):
+            callback_target = req.get("callback_url") or req.get("webhook_url")
+            if callback_target:
                 secret = req.get("webhook_secret") or settings.webhook_secret
                 await webhook_service.send_callback(
-                    webhook_url=req["webhook_url"],
+                    webhook_url=callback_target,
                     secret=secret,
                     payload={"event": "job.succeeded", "job_id": job_id, "result": result_payload}
                 )
@@ -367,10 +428,11 @@ class JobManager:
             logger.error(f"Job {job_id} failed: {err}", exc_info=True)
             job["error"] = str(err)
             self._update_stage(job_id, "failed", 100, JobStatus.FAILED)
-            if job["request"].get("webhook_url"):
+            callback_target = job["request"].get("callback_url") or job["request"].get("webhook_url")
+            if callback_target:
                 secret = job["request"].get("webhook_secret") or settings.webhook_secret
                 await webhook_service.send_callback(
-                    webhook_url=job["request"]["webhook_url"],
+                    webhook_url=callback_target,
                     secret=secret,
                     payload={"event": "job.failed", "job_id": job_id, "error": str(err)}
                 )
