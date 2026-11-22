@@ -1,1141 +1,873 @@
-# OpenAPI 3.1 Specification for FrameFlow AI
-{
-  "openapi": "3.1.0",
-  "info": {
-    "title": "FrameFlow AI \u2013 Intelligent B-roll Studio",
-    "description": "Intelligent AI Script and Voiceover to B-roll Video Engine (IncuBrix PS3)",
-    "version": "1.0.0"
-  },
-  "paths": {
-    "/health": {
-      "get": {
-        "tags": [
-          "System Health"
-        ],
-        "summary": "Health Check",
-        "operationId": "health_check_health_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HealthStatus"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/ready": {
-      "get": {
-        "tags": [
-          "System Health"
-        ],
-        "summary": "Readiness Check",
-        "operationId": "readiness_check_ready_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/broll/jobs": {
-      "post": {
-        "tags": [
-          "B-roll Jobs"
-        ],
-        "summary": "Create Broll Job",
-        "operationId": "create_broll_job_api_v1_broll_jobs_post",
-        "parameters": [
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Idempotency-Key"
-            }
-          },
-          {
-            "name": "X-Correlation-ID",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Correlation-Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BrollJobCreateRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "202": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/JobDetailResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/jobs/{job_id}": {
-      "get": {
-        "tags": [
-          "B-roll Jobs"
-        ],
-        "summary": "Get Job Status",
-        "operationId": "get_job_status_api_v1_jobs__job_id__get",
-        "parameters": [
-          {
-            "name": "job_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Job Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/JobDetailResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/jobs/{job_id}/result": {
-      "get": {
-        "tags": [
-          "B-roll Jobs"
-        ],
-        "summary": "Get Job Result",
-        "operationId": "get_job_result_api_v1_jobs__job_id__result_get",
-        "parameters": [
-          {
-            "name": "job_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Job Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/JobResultResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/jobs/{job_id}/scenes/{scene_number}/replace": {
-      "post": {
-        "tags": [
-          "B-roll Jobs"
-        ],
-        "summary": "Replace Scene Footage",
-        "description": "Incremental clip-level rerender: replaces footage of target scene\nand re-stitches videos without re-rendering unaffected scenes.",
-        "operationId": "replace_scene_footage_api_v1_jobs__job_id__scenes__scene_number__replace_post",
-        "parameters": [
-          {
-            "name": "job_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Job Id"
-            }
-          },
-          {
-            "name": "scene_number",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Scene Number"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SceneReplaceRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/JobDetailResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/jobs": {
-      "get": {
-        "tags": [
-          "B-roll Jobs"
-        ],
-        "summary": "List Recent Jobs",
-        "operationId": "list_recent_jobs_api_v1_jobs_get",
-        "parameters": [
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "default": 20,
-              "title": "Limit"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/JobDetailResponse"
-                  },
-                  "title": "Response List Recent Jobs Api V1 Jobs Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/analytics": {
-      "get": {
-        "tags": [
-          "Analytics & Providers"
-        ],
-        "summary": "Get Analytics",
-        "operationId": "get_analytics_api_v1_analytics_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/tts/synthesize": {
-      "post": {
-        "tags": [
-          "Speech Synthesis"
-        ],
-        "summary": "Preview Speech",
-        "operationId": "preview_speech_api_v1_tts_synthesize_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TTSPreviewRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  },
-  "components": {
-    "schemas": {
-      "AspectRatio": {
-        "type": "string",
-        "enum": [
-          "16:9",
-          "9:16",
-          "1:1"
-        ],
-        "title": "AspectRatio"
-      },
-      "BrollJobCreateRequest": {
-        "properties": {
-          "script_text": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Script Text",
-            "description": "Plain text narration script"
-          },
-          "audio_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Audio Url",
-            "description": "Direct URL to pre-recorded audio file"
-          },
-          "audio_base64": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Audio Base64",
-            "description": "Base64-encoded audio bytes (MP3, WAV, M4A)"
-          },
-          "audio_filename": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Audio Filename"
-          },
-          "scenes": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/SceneInputRequest"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Scenes",
-            "description": "Explicit manual scenes if not auto-segmenting"
-          },
-          "voice_config": {
-            "$ref": "#/components/schemas/VoiceConfig"
-          },
-          "aspect_ratios": {
-            "items": {
-              "$ref": "#/components/schemas/AspectRatio"
-            },
-            "type": "array",
-            "title": "Aspect Ratios",
-            "default": [
-              "16:9",
-              "9:16",
-              "1:1"
-            ]
-          },
-          "style": {
-            "$ref": "#/components/schemas/VisualPromptStyle",
-            "default": "cinematic"
-          },
-          "style_instructions": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Style Instructions",
-            "description": "Global visual mood directions"
-          },
-          "avoid_instructions": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Avoid Instructions",
-            "description": "Visual keywords/concepts to avoid"
-          },
-          "caption_config": {
-            "$ref": "#/components/schemas/CaptionConfig"
-          },
-          "webhook_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Webhook Url"
-          },
-          "webhook_secret": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Webhook Secret"
-          }
-        },
-        "type": "object",
-        "title": "BrollJobCreateRequest"
-      },
-      "CaptionConfig": {
-        "properties": {
-          "enabled": {
-            "type": "boolean",
-            "title": "Enabled",
-            "default": true
-          },
-          "burned_in": {
-            "type": "boolean",
-            "title": "Burned In",
-            "default": true
-          },
-          "font_size": {
-            "type": "integer",
-            "maximum": 72.0,
-            "minimum": 16.0,
-            "title": "Font Size",
-            "default": 32
-          },
-          "font_color": {
-            "type": "string",
-            "title": "Font Color",
-            "default": "#FFFFFF"
-          },
-          "background_box": {
-            "type": "boolean",
-            "title": "Background Box",
-            "default": true
-          },
-          "subtitle_style": {
-            "type": "string",
-            "title": "Subtitle Style",
-            "default": "highlight_current"
-          }
-        },
-        "type": "object",
-        "title": "CaptionConfig"
-      },
-      "FootageClip": {
-        "properties": {
-          "clip_id": {
-            "type": "string",
-            "title": "Clip Id"
-          },
-          "provider": {
-            "type": "string",
-            "title": "Provider"
-          },
-          "source_url": {
-            "type": "string",
-            "title": "Source Url"
-          },
-          "download_url": {
-            "type": "string",
-            "title": "Download Url"
-          },
-          "local_path": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Local Path"
-          },
-          "width": {
-            "type": "integer",
-            "title": "Width"
-          },
-          "height": {
-            "type": "integer",
-            "title": "Height"
-          },
-          "duration": {
-            "type": "number",
-            "title": "Duration"
-          },
-          "fps": {
-            "type": "number",
-            "title": "Fps",
-            "default": 30.0
-          },
-          "licence": {
-            "type": "string",
-            "title": "Licence"
-          },
-          "attribution": {
-            "type": "string",
-            "title": "Attribution"
-          },
-          "is_commercial_cleared": {
-            "type": "boolean",
-            "title": "Is Commercial Cleared",
-            "default": true
-          },
-          "is_ai_generated": {
-            "type": "boolean",
-            "title": "Is Ai Generated",
-            "default": false
-          },
-          "tags": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Tags",
-            "default": []
-          }
-        },
-        "type": "object",
-        "required": [
-          "clip_id",
-          "provider",
-          "source_url",
-          "download_url",
-          "width",
-          "height",
-          "duration",
-          "licence",
-          "attribution"
-        ],
-        "title": "FootageClip"
-      },
-      "HTTPValidationError": {
-        "properties": {
-          "detail": {
-            "items": {
-              "$ref": "#/components/schemas/ValidationError"
-            },
-            "type": "array",
-            "title": "Detail"
-          }
-        },
-        "type": "object",
-        "title": "HTTPValidationError"
-      },
-      "HealthStatus": {
-        "properties": {
-          "status": {
-            "type": "string",
-            "title": "Status"
-          },
-          "version": {
-            "type": "string",
-            "title": "Version"
-          },
-          "ffmpeg_available": {
-            "type": "boolean",
-            "title": "Ffmpeg Available"
-          },
-          "ffmpeg_version": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Ffmpeg Version"
-          },
-          "storage_writable": {
-            "type": "boolean",
-            "title": "Storage Writable"
-          },
-          "active_jobs": {
-            "type": "integer",
-            "title": "Active Jobs"
-          }
-        },
-        "type": "object",
-        "required": [
-          "status",
-          "version",
-          "ffmpeg_available",
-          "storage_writable",
-          "active_jobs"
-        ],
-        "title": "HealthStatus"
-      },
-      "JobDetailResponse": {
-        "properties": {
-          "job_id": {
-            "type": "string",
-            "title": "Job Id"
-          },
-          "correlation_id": {
-            "type": "string",
-            "title": "Correlation Id"
-          },
-          "status": {
-            "$ref": "#/components/schemas/JobStatus"
-          },
-          "progress": {
-            "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
-            "title": "Progress"
-          },
-          "stage": {
-            "type": "string",
-            "title": "Stage"
-          },
-          "scenes": {
-            "items": {
-              "$ref": "#/components/schemas/SceneDetail"
-            },
-            "type": "array",
-            "title": "Scenes",
-            "default": []
-          },
-          "warnings": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Warnings",
-            "default": []
-          },
-          "error": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Error"
-          },
-          "created_at": {
-            "type": "string",
-            "title": "Created At"
-          },
-          "updated_at": {
-            "type": "string",
-            "title": "Updated At"
-          }
-        },
-        "type": "object",
-        "required": [
-          "job_id",
-          "correlation_id",
-          "status",
-          "progress",
-          "stage",
-          "created_at",
-          "updated_at"
-        ],
-        "title": "JobDetailResponse"
-      },
-      "JobResultResponse": {
-        "properties": {
-          "job_id": {
-            "type": "string",
-            "title": "Job Id"
-          },
-          "status": {
-            "$ref": "#/components/schemas/JobStatus"
-          },
-          "video_urls": {
-            "additionalProperties": {
-              "type": "string"
-            },
-            "type": "object",
-            "title": "Video Urls"
-          },
-          "captions_srt_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Captions Srt Url"
-          },
-          "timeline_json_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Timeline Json Url"
-          },
-          "manifest_json_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Manifest Json Url"
-          },
-          "metrics": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Metrics"
-          },
-          "licences": {
-            "items": {
-              "additionalProperties": true,
-              "type": "object"
-            },
-            "type": "array",
-            "title": "Licences"
-          },
-          "quality_report": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Quality Report"
-          }
-        },
-        "type": "object",
-        "required": [
-          "job_id",
-          "status"
-        ],
-        "title": "JobResultResponse"
-      },
-      "JobStatus": {
-        "type": "string",
-        "enum": [
-          "queued",
-          "running",
-          "succeeded",
-          "failed"
-        ],
-        "title": "JobStatus"
-      },
-      "LanguageCode": {
-        "type": "string",
-        "enum": [
-          "en",
-          "hi",
-          "ta"
-        ],
-        "title": "LanguageCode"
-      },
-      "SceneDetail": {
-        "properties": {
-          "scene_number": {
-            "type": "integer",
-            "title": "Scene Number"
-          },
-          "narration_text": {
-            "type": "string",
-            "title": "Narration Text"
-          },
-          "start_time": {
-            "type": "number",
-            "title": "Start Time"
-          },
-          "end_time": {
-            "type": "number",
-            "title": "End Time"
-          },
-          "duration": {
-            "type": "number",
-            "title": "Duration"
-          },
-          "visual_description": {
-            "type": "string",
-            "title": "Visual Description"
-          },
-          "search_query": {
-            "type": "string",
-            "title": "Search Query"
-          },
-          "selected_footage": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/FootageClip"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "ai_generated": {
-            "type": "boolean",
-            "title": "Ai Generated",
-            "default": false
-          },
-          "relevance_score": {
-            "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
-            "title": "Relevance Score",
-            "default": 0.0
-          },
-          "vlm_score": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Vlm Score"
-          },
-          "selection_reason": {
-            "type": "string",
-            "title": "Selection Reason",
-            "default": ""
-          },
-          "status": {
-            "type": "string",
-            "title": "Status",
-            "default": "ready"
-          }
-        },
-        "type": "object",
-        "required": [
-          "scene_number",
-          "narration_text",
-          "start_time",
-          "end_time",
-          "duration",
-          "visual_description",
-          "search_query"
-        ],
-        "title": "SceneDetail"
-      },
-      "SceneInputRequest": {
-        "properties": {
-          "narration_text": {
-            "type": "string",
-            "title": "Narration Text"
-          },
-          "custom_visual_description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Custom Visual Description"
-          },
-          "manual_keywords": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Manual Keywords"
-          }
-        },
-        "type": "object",
-        "required": [
-          "narration_text"
-        ],
-        "title": "SceneInputRequest"
-      },
-      "SceneReplaceRequest": {
-        "properties": {
-          "new_footage_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "New Footage Id"
-          },
-          "custom_query": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Custom Query"
-          },
-          "new_visual_description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "New Visual Description"
-          }
-        },
-        "type": "object",
-        "title": "SceneReplaceRequest"
-      },
-      "TTSPreviewRequest": {
-        "properties": {
-          "text": {
-            "type": "string",
-            "title": "Text"
-          },
-          "voice_config": {
-            "$ref": "#/components/schemas/VoiceConfig",
-            "default": {
-              "language": "en",
-              "voice_name": "default",
-              "speech_rate": 1.0,
-              "pitch": 0.0
-            }
-          }
-        },
-        "type": "object",
-        "required": [
-          "text"
-        ],
-        "title": "TTSPreviewRequest"
-      },
-      "ValidationError": {
-        "properties": {
-          "loc": {
-            "items": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                }
-              ]
-            },
-            "type": "array",
-            "title": "Location"
-          },
-          "msg": {
-            "type": "string",
-            "title": "Message"
-          },
-          "type": {
-            "type": "string",
-            "title": "Error Type"
-          },
-          "input": {
-            "title": "Input"
-          },
-          "ctx": {
-            "type": "object",
-            "title": "Context"
-          }
-        },
-        "type": "object",
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
-        "title": "ValidationError"
-      },
-      "VisualPromptStyle": {
-        "type": "string",
-        "enum": [
-          "realistic",
-          "cinematic",
-          "minimalist",
-          "dynamic",
-          "documentary"
-        ],
-        "title": "VisualPromptStyle"
-      },
-      "VoiceConfig": {
-        "properties": {
-          "language": {
-            "$ref": "#/components/schemas/LanguageCode",
-            "default": "en"
-          },
-          "voice_name": {
-            "type": "string",
-            "title": "Voice Name",
-            "default": "default"
-          },
-          "speech_rate": {
-            "type": "number",
-            "maximum": 2.0,
-            "minimum": 0.5,
-            "title": "Speech Rate",
-            "default": 1.0
-          },
-          "pitch": {
-            "type": "number",
-            "maximum": 10.0,
-            "minimum": -10.0,
-            "title": "Pitch",
-            "default": 0.0
-          }
-        },
-        "type": "object",
-        "title": "VoiceConfig"
-      }
-    }
-  }
-}
+openapi: 3.1.0
+info:
+  title: "FrameFlow AI \u2013 Intelligent B-roll Studio"
+  description: Intelligent AI Script and Voiceover to B-roll Video Engine (IncuBrix
+    PS3)
+  version: 1.1.0
+paths:
+  /health:
+    get:
+      tags:
+      - System Health
+      summary: Health Check
+      operationId: health_check_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+  /ready:
+    get:
+      tags:
+      - System Health
+      summary: Readiness Check
+      operationId: readiness_check_ready_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /api/v1/broll/jobs:
+    post:
+      tags:
+      - B-roll Jobs
+      summary: Create Broll Job
+      operationId: create_broll_job_api_v1_broll_jobs_post
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Idempotency-Key
+      - name: X-Correlation-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Correlation-Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BrollJobCreateRequest'
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobDetailResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/broll/jobs/upload:
+    post:
+      tags:
+      - B-roll Jobs
+      summary: Create Broll Job With Audio File
+      description: Multipart audio file upload endpoint (MP3, WAV, M4A).
+      operationId: create_broll_job_with_audio_file_api_v1_broll_jobs_upload_post
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Idempotency-Key
+      - name: X-Correlation-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Correlation-Id
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_create_broll_job_with_audio_file_api_v1_broll_jobs_upload_post'
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobDetailResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/jobs/{job_id}:
+    get:
+      tags:
+      - B-roll Jobs
+      summary: Get Job Status
+      operationId: get_job_status_api_v1_jobs__job_id__get
+      parameters:
+      - name: job_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Job Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobDetailResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/jobs/{job_id}/result:
+    get:
+      tags:
+      - B-roll Jobs
+      summary: Get Job Result
+      operationId: get_job_result_api_v1_jobs__job_id__result_get
+      parameters:
+      - name: job_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Job Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResultResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/jobs/{job_id}/scenes/{scene_number}/replace:
+    post:
+      tags:
+      - B-roll Jobs
+      summary: Replace Scene Footage
+      description: 'Incremental clip-level rerender: replaces footage of target scene
+
+        and re-stitches videos without re-rendering unaffected scenes.'
+      operationId: replace_scene_footage_api_v1_jobs__job_id__scenes__scene_number__replace_post
+      parameters:
+      - name: job_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Job Id
+      - name: scene_number
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Scene Number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SceneReplaceRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobDetailResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/jobs:
+    get:
+      tags:
+      - B-roll Jobs
+      summary: List Recent Jobs
+      operationId: list_recent_jobs_api_v1_jobs_get
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 20
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/JobDetailResponse'
+                title: Response List Recent Jobs Api V1 Jobs Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/analytics:
+    get:
+      tags:
+      - Analytics & Providers
+      summary: Get Analytics
+      operationId: get_analytics_api_v1_analytics_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /api/v1/tts/synthesize:
+    post:
+      tags:
+      - Speech Synthesis
+      summary: Preview Speech
+      operationId: preview_speech_api_v1_tts_synthesize_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TTSPreviewRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    AspectRatio:
+      type: string
+      enum:
+      - '16:9'
+      - '9:16'
+      - '1:1'
+      title: AspectRatio
+    Body_create_broll_job_with_audio_file_api_v1_broll_jobs_upload_post:
+      properties:
+        audio_file:
+          type: string
+          contentMediaType: application/octet-stream
+          title: Audio File
+        script:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Script
+        aspect_ratios:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Aspect Ratios
+        style:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Style
+          default: cinematic
+        avoid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Avoid
+        callback_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Callback Url
+      type: object
+      required:
+      - audio_file
+      title: Body_create_broll_job_with_audio_file_api_v1_broll_jobs_upload_post
+    BrollJobCreateRequest:
+      properties:
+        script:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Script
+        scenes:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/SceneInputRequest'
+            type: array
+          - type: 'null'
+          title: Scenes
+        voice:
+          $ref: '#/components/schemas/VoiceConfig'
+        aspect_ratios:
+          items:
+            $ref: '#/components/schemas/AspectRatio'
+          type: array
+          title: Aspect Ratios
+          default:
+          - '16:9'
+          - '9:16'
+          - '1:1'
+        style:
+          $ref: '#/components/schemas/VisualPromptStyle'
+          default: cinematic
+        avoid:
+          items:
+            type: string
+          type: array
+          title: Avoid
+        captions:
+          $ref: '#/components/schemas/CaptionConfig'
+        audio_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Audio Url
+        callback_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Callback Url
+        webhook_secret:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Webhook Secret
+        script_text:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Script Text
+        audio_base64:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Audio Base64
+        audio_filename:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Audio Filename
+        voice_config:
+          anyOf:
+          - $ref: '#/components/schemas/VoiceConfig'
+          - type: 'null'
+        style_instructions:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Style Instructions
+        avoid_instructions:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Avoid Instructions
+        caption_config:
+          anyOf:
+          - $ref: '#/components/schemas/CaptionConfig'
+          - type: 'null'
+        webhook_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Webhook Url
+      type: object
+      title: BrollJobCreateRequest
+    CaptionConfig:
+      properties:
+        burn_in:
+          type: boolean
+          title: Burn In
+          default: true
+        srt:
+          type: boolean
+          title: Srt
+          default: true
+        font_size:
+          type: integer
+          maximum: 72.0
+          minimum: 16.0
+          title: Font Size
+          default: 32
+        font_color:
+          type: string
+          title: Font Color
+          default: '#FFFFFF'
+        background_box:
+          type: boolean
+          title: Background Box
+          default: true
+        subtitle_style:
+          type: string
+          title: Subtitle Style
+          default: highlight_current
+      type: object
+      title: CaptionConfig
+    FootageClip:
+      properties:
+        clip_id:
+          type: string
+          title: Clip Id
+        provider:
+          type: string
+          title: Provider
+        source_url:
+          type: string
+          title: Source Url
+        download_url:
+          type: string
+          title: Download Url
+        local_path:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Local Path
+        width:
+          type: integer
+          title: Width
+        height:
+          type: integer
+          title: Height
+        duration:
+          type: number
+          title: Duration
+        fps:
+          type: number
+          title: Fps
+          default: 30.0
+        licence:
+          type: string
+          title: Licence
+        attribution:
+          type: string
+          title: Attribution
+        is_commercial_cleared:
+          type: boolean
+          title: Is Commercial Cleared
+          default: true
+        is_ai_generated:
+          type: boolean
+          title: Is Ai Generated
+          default: false
+        watermark:
+          type: boolean
+          title: Watermark
+          default: false
+        tags:
+          items:
+            type: string
+          type: array
+          title: Tags
+          default: []
+      type: object
+      required:
+      - clip_id
+      - provider
+      - source_url
+      - download_url
+      - width
+      - height
+      - duration
+      - licence
+      - attribution
+      title: FootageClip
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    HealthStatus:
+      properties:
+        status:
+          type: string
+          title: Status
+        version:
+          type: string
+          title: Version
+        ffmpeg_available:
+          type: boolean
+          title: Ffmpeg Available
+        ffmpeg_version:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ffmpeg Version
+        storage_writable:
+          type: boolean
+          title: Storage Writable
+        database_connected:
+          type: boolean
+          title: Database Connected
+          default: true
+        active_jobs:
+          type: integer
+          title: Active Jobs
+          default: 0
+      type: object
+      required:
+      - status
+      - version
+      - ffmpeg_available
+      - storage_writable
+      title: HealthStatus
+    JobDetailResponse:
+      properties:
+        job_id:
+          type: string
+          title: Job Id
+        correlation_id:
+          type: string
+          title: Correlation Id
+        status:
+          $ref: '#/components/schemas/JobStatus'
+        progress:
+          type: integer
+          maximum: 100.0
+          minimum: 0.0
+          title: Progress
+        stage:
+          type: string
+          title: Stage
+        scenes:
+          items:
+            $ref: '#/components/schemas/SceneDetail'
+          type: array
+          title: Scenes
+          default: []
+        warnings:
+          items:
+            type: string
+          type: array
+          title: Warnings
+          default: []
+        error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+        created_at:
+          type: string
+          title: Created At
+        updated_at:
+          type: string
+          title: Updated At
+      type: object
+      required:
+      - job_id
+      - correlation_id
+      - status
+      - progress
+      - stage
+      - created_at
+      - updated_at
+      title: JobDetailResponse
+    JobResultResponse:
+      properties:
+        job_id:
+          type: string
+          title: Job Id
+        status:
+          $ref: '#/components/schemas/JobStatus'
+        video_urls:
+          additionalProperties:
+            type: string
+          type: object
+          title: Video Urls
+        captions_srt_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Captions Srt Url
+        timeline_json_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Timeline Json Url
+        manifest_json_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Manifest Json Url
+        metrics:
+          additionalProperties: true
+          type: object
+          title: Metrics
+        licences:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Licences
+        quality_report:
+          additionalProperties: true
+          type: object
+          title: Quality Report
+      type: object
+      required:
+      - job_id
+      - status
+      title: JobResultResponse
+    JobStatus:
+      type: string
+      enum:
+      - queued
+      - running
+      - succeeded
+      - failed
+      title: JobStatus
+    LanguageCode:
+      type: string
+      enum:
+      - en
+      - hi
+      - ta
+      title: LanguageCode
+    SceneDetail:
+      properties:
+        scene_number:
+          type: integer
+          title: Scene Number
+        narration_text:
+          type: string
+          title: Narration Text
+        start_time:
+          type: number
+          title: Start Time
+        end_time:
+          type: number
+          title: End Time
+        duration:
+          type: number
+          title: Duration
+        visual_description:
+          type: string
+          title: Visual Description
+        search_query:
+          type: string
+          title: Search Query
+        selected_footage:
+          anyOf:
+          - $ref: '#/components/schemas/FootageClip'
+          - type: 'null'
+        source:
+          type: string
+          title: Source
+          default: mock
+        clip_id:
+          type: string
+          title: Clip Id
+          default: ''
+        source_url:
+          type: string
+          title: Source Url
+          default: ''
+        licence:
+          type: string
+          title: Licence
+          default: ''
+        attribution:
+          type: string
+          title: Attribution
+          default: ''
+        is_ai_generated:
+          type: boolean
+          title: Is Ai Generated
+          default: false
+        watermark:
+          type: boolean
+          title: Watermark
+          default: false
+        selection_rule:
+          type: string
+          title: Selection Rule
+          default: CLIP image-text cosine similarity ranking
+        selection_reason:
+          type: string
+          title: Selection Reason
+          default: ''
+        relevance_score:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Relevance Score
+          default: 0.0
+        clip_rating:
+          type: integer
+          maximum: 5.0
+          minimum: 1.0
+          title: Clip Rating
+          default: 3
+        warnings:
+          items:
+            type: string
+          type: array
+          title: Warnings
+        status:
+          type: string
+          title: Status
+          default: ready
+      type: object
+      required:
+      - scene_number
+      - narration_text
+      - start_time
+      - end_time
+      - duration
+      - visual_description
+      - search_query
+      title: SceneDetail
+    SceneInputRequest:
+      properties:
+        text:
+          type: string
+          title: Text
+          default: ''
+        visual_hint:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Visual Hint
+        manual_keywords:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Manual Keywords
+      type: object
+      title: SceneInputRequest
+    SceneReplaceRequest:
+      properties:
+        new_footage_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: New Footage Id
+        custom_query:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Custom Query
+        new_visual_description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: New Visual Description
+      type: object
+      title: SceneReplaceRequest
+    TTSPreviewRequest:
+      properties:
+        text:
+          type: string
+          title: Text
+        voice_config:
+          $ref: '#/components/schemas/VoiceConfig'
+          default:
+            language: en
+            voice_name: default
+            speech_rate: 1.0
+            pitch: 0.0
+      type: object
+      required:
+      - text
+      title: TTSPreviewRequest
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    VisualPromptStyle:
+      type: string
+      enum:
+      - realistic
+      - cinematic
+      - minimalist
+      - dynamic
+      - documentary
+      title: VisualPromptStyle
+    VoiceConfig:
+      properties:
+        language:
+          $ref: '#/components/schemas/LanguageCode'
+          default: en
+        voice_name:
+          type: string
+          title: Voice Name
+          default: default
+        speech_rate:
+          type: number
+          maximum: 2.0
+          minimum: 0.5
+          title: Speech Rate
+          default: 1.0
+        pitch:
+          type: number
+          maximum: 10.0
+          minimum: -10.0
+          title: Pitch
+          default: 0.0
+      type: object
+      title: VoiceConfig
