@@ -56,6 +56,13 @@ class QueryIntelligenceService:
         (re.compile(r'\bsilence\b.*?\b(loud|powerful|speak)\b', re.IGNORECASE), "tranquil glassy mountain lake reflecting snow peaks with zero ripples", "tranquil mountain lake"),
     ]
 
+    def disambiguate_query(self, phrase: str) -> str:
+        """
+        Disambiguates homonyms, abstract metaphors, and numbers, returning the clean search query.
+        """
+        _, query, _ = self.formulate_intelligent_query(phrase)
+        return query
+
     def formulate_intelligent_query(self, phrase: str, visual_style: str = "cinematic") -> Tuple[str, str, str]:
         """
         Takes raw narration phrase and outputs:

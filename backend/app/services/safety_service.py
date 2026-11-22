@@ -25,6 +25,7 @@ class SafetyService:
         
         # Commercial brands
         "apple": "sleek modern mobile smartphone with clean glass screen",
+        "iphone": "modern smartphone with glass display",
         "google": "high speed internet digital data search visual",
         "microsoft": "enterprise cloud computing desktop workflow",
         "tesla": "modern electric vehicle driving on scenic highway",
@@ -41,6 +42,13 @@ class SafetyService:
     BLOCKLIST_GRAPHIC_CELEBRATORY = {
         "party", "club", "confetti", "fireworks", "champagne", "graphic", "blood", "gore"
     }
+
+    def sanitize_text_query(self, text: str) -> str:
+        """
+        Sanitizes text query replacing named entities and brands with generic stand-in visuals.
+        """
+        q, v, _, _ = self.sanitize_scene_intent(text, text, text, [])
+        return f"{q} {v}"
 
     def sanitize_scene_intent(
         self,

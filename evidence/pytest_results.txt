@@ -1,0 +1,61 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.11.9, pytest-9.1.1, pluggy-1.7.0 -- C:\Users\Lenovo\Python311\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Lenovo\Desktop\incubrix
+plugins: anyio-4.15.1, asyncio-1.5.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 21 items
+
+backend/tests/test_all_18_scenarios.py::test_01_text_script_submission PASSED [  4%]
+backend/tests/test_all_18_scenarios.py::test_02_audio_upload_validation PASSED [  9%]
+backend/tests/test_all_18_scenarios.py::test_03_empty_script_rejected PASSED [ 14%]
+backend/tests/test_all_18_scenarios.py::test_04_unsupported_audio_format PASSED [ 19%]
+backend/tests/test_all_18_scenarios.py::test_05_silent_audio_rejected PASSED [ 23%]
+backend/tests/test_all_18_scenarios.py::test_06_music_only_audio_rejected PASSED [ 28%]
+backend/tests/test_all_18_scenarios.py::test_07_meaning_based_scene_splitting PASSED [ 33%]
+backend/tests/test_all_18_scenarios.py::test_08_query_disambiguation PASSED [ 38%]
+backend/tests/test_all_18_scenarios.py::test_09_abstract_metaphors_and_statistics PASSED [ 42%]
+backend/tests/test_all_18_scenarios.py::test_10_safety_module PASSED     [ 47%]
+backend/tests/test_all_18_scenarios.py::test_11_clip_similarity_scoring PASSED [ 52%]
+backend/tests/test_all_18_scenarios.py::test_12_duplicate_clip_prevention PASSED [ 57%]
+backend/tests/test_all_18_scenarios.py::test_13_licence_metadata PASSED  [ 61%]
+backend/tests/test_all_18_scenarios.py::test_14_provider_disable_fallback PASSED [ 66%]
+backend/tests/test_all_18_scenarios.py::test_15_video_rendering_three_aspect_ratios PASSED [ 71%]
+backend/tests/test_all_18_scenarios.py::test_16_smart_crop_saliency PASSED [ 76%]
+backend/tests/test_all_18_scenarios.py::test_17_post_render_ffprobe_validator PASSED [ 80%]
+backend/tests/test_all_18_scenarios.py::test_18_idempotency_hash_and_mismatch PASSED [ 85%]
+backend/tests/test_all_18_scenarios.py::test_19_concurrent_jobs_without_collision PASSED [ 90%]
+backend/tests/test_openapi_spec.py::test_openapi_specification_matches PASSED [ 95%]
+backend/tests/test_pack_runner.py::test_10_script_test_pack PASSED       [100%]
+
+============================== warnings summary ===============================
+backend/tests/test_all_18_scenarios.py::test_01_text_script_submission
+backend/tests/test_all_18_scenarios.py::test_18_idempotency_hash_and_mismatch
+backend/tests/test_all_18_scenarios.py::test_18_idempotency_hash_and_mismatch
+backend/tests/test_all_18_scenarios.py::test_18_idempotency_hash_and_mismatch
+backend/tests/test_all_18_scenarios.py::test_19_concurrent_jobs_without_collision
+backend/tests/test_all_18_scenarios.py::test_19_concurrent_jobs_without_collision
+  C:\Users\Lenovo\Desktop\incubrix\backend\app\api\routes_jobs.py:43: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.14/migration/
+    payload_dict = request_data.dict()
+
+backend/tests/test_all_18_scenarios.py::test_01_text_script_submission
+backend/tests/test_all_18_scenarios.py::test_18_idempotency_hash_and_mismatch
+backend/tests/test_all_18_scenarios.py::test_19_concurrent_jobs_without_collision
+backend/tests/test_all_18_scenarios.py::test_19_concurrent_jobs_without_collision
+  C:\Users\Lenovo\Desktop\incubrix\backend\app\services\job_manager.py:64: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.14/migration/
+    "request": req.dict(),
+
+backend/tests/test_all_18_scenarios.py::test_05_silent_audio_rejected
+  C:\Users\Lenovo\Desktop\incubrix\backend\app\services\asr_service.py:213: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    raise SilentAudioError("Audio is completely silent. Please provide audible narration.")
+
+backend/tests/test_all_18_scenarios.py::test_06_music_only_audio_rejected
+  C:\Users\Lenovo\Desktop\incubrix\backend\app\services\asr_service.py:217: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    raise MusicOnlyAudioError("Audio contains background music/noise without detectable vocal narration.")
+
+backend/tests/test_all_18_scenarios.py::test_18_idempotency_hash_and_mismatch
+  C:\Users\Lenovo\Desktop\incubrix\backend\app\api\routes_jobs.py:61: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.14/migration/
+    idempotency_store.store_response(idempotency_key, payload_dict, job_detail.dict())
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 21 passed, 13 warnings in 5.40s =======================

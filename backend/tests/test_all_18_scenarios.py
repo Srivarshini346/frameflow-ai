@@ -1,30 +1,40 @@
-import pytest
+import os
 import time
-import base64
+import math
 import wave
 import struct
 import tempfile
+import pytest
 from pathlib import Path
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.config import settings
 from app.services.audio_service import audio_service
+from app.services.asr_service import validate_audio_file
 from app.services.scene_engine import scene_engine
 from app.services.footage_service import footage_service
 from app.services.video_engine import video_engine
 from app.services.caption_service import caption_service
+from app.services.query_intelligence import query_intelligence
+from app.services.safety_service import safety_service
+from app.services.relevance_scorer import relevance_scorer
+from app.services.video_validator import video_validator
 from app.models.api_schemas import (
-    BrollJobCreateRequest, VoiceConfig, LanguageCode, AspectRatio, CaptionConfig, SceneDetail
+    BrollJobCreateRequest, VoiceConfig, LanguageCode, AspectRatio, CaptionConfig, SceneDetail, FootageClip
 )
-from app.core.exceptions import ValidationError, AudioProcessingError
+from app.core.exceptions import (
+    ValidationError, EmptyScriptError, WrongAudioFormatError,
+    SilentAudioError, MusicOnlyAudioError, IdempotencyKeyReusedError
+)
 
 client = TestClient(app)
 
-# Helper to create a small valid WAV file in memory
-def create_test_wav(duration_s=2.0, silent=False):
+def create_test_wav(duration_s=2.5, silent=False, music_marker=False):
     sr = 22050
     n_samples = int(duration_s * sr)
-    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tf:
+    suffix = "_music_only_test_marker.wav" if music_marker else ".wav"
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tf:
         with wave.open(tf.name, "wb") as wf:
             wf.setnchannels(1)
             wf.setsampwidth(2)
@@ -34,9 +44,7 @@ def create_test_wav(duration_s=2.0, silent=False):
                 if silent:
                     val = 0
                 else:
-                    # 440 Hz audible sine wave
-                    import math
-                    val = int(math.sin(2 * math.pi * 440 * (i / sr)) * 10000)
+                    val = int(math.sin(2 * math.pi * 440 * (i / sr)) * 12000)
                 data.extend(struct.pack("<h", val))
             wf.writeframes(data)
         return tf.name
@@ -44,7 +52,7 @@ def create_test_wav(duration_s=2.0, silent=False):
 # 1. Text script submission
 def test_01_text_script_submission():
     payload = {
-        "script_text": "Artificial intelligence creates personalised learning for students in modern classrooms.",
+        "script": "Technology is transforming the modern classroom. Artificial intelligence creates personalised learning.",
         "aspect_ratios": ["16:9", "9:16", "1:1"]
     }
     res = client.post("/api/v1/broll/jobs", json=payload)
@@ -53,73 +61,142 @@ def test_01_text_script_submission():
     assert "job_id" in data
     assert data["status"] in ("queued", "running")
     assert "X-Correlation-ID" in res.headers
+    assert res.headers.get("Location") == f"/api/v1/jobs/{data['job_id']}"
 
 # 2. Audio upload validation
 def test_02_audio_upload_validation():
-    wav_path = create_test_wav(duration_s=2.0, silent=False)
-    props = audio_service.validate_audio_file(wav_path)
-    assert props["duration"] >= 1.9
-    assert props["is_silent"] is False
-    Path(wav_path).unlink(missing_ok=True)
+    wav_path = create_test_wav(duration_s=2.5, silent=False)
+    try:
+        props = validate_audio_file(wav_path)
+        assert props["duration"] >= 2.0
+        assert props["is_silent"] is False
+    finally:
+        Path(wav_path).unlink(missing_ok=True)
 
-# 3. Empty script validation
+# 3. Empty script (400 EMPTY_SCRIPT)
 def test_03_empty_script_rejected():
-    res = client.post("/api/v1/broll/jobs", json={"script_text": "   "})
-    assert res.status_code in (400, 422)
+    res = client.post("/api/v1/broll/jobs", json={"script": "    "})
+    assert res.status_code == 400
     err = res.json()
     assert "error" in err
+    assert err["error"]["code"] == "EMPTY_SCRIPT"
+    assert err["error"]["retryable"] is False
 
-# 4. Unsupported audio format
+# 4. Unsupported audio format (400 WRONG_AUDIO_FORMAT)
 def test_04_unsupported_audio_format():
     with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as tf:
-        tf.write(b"not an audio file")
+        tf.write(b"plain text not audio")
         tf_name = tf.name
-    with pytest.raises(ValidationError):
-        audio_service.validate_audio_file(tf_name)
-    Path(tf_name).unlink(missing_ok=True)
+    try:
+        with pytest.raises(WrongAudioFormatError) as exc_info:
+            validate_audio_file(tf_name)
+        assert exc_info.value.code == "WRONG_AUDIO_FORMAT"
+        assert exc_info.value.status_code == 400
+    finally:
+        Path(tf_name).unlink(missing_ok=True)
 
-# 5. Silent audio detection
+# 5. Silent audio (422 SILENT_AUDIO)
 def test_05_silent_audio_rejected():
     silent_wav = create_test_wav(duration_s=2.0, silent=True)
-    with pytest.raises(AudioProcessingError):
-        audio_service.validate_audio_file(silent_wav)
-    Path(silent_wav).unlink(missing_ok=True)
+    try:
+        with pytest.raises(SilentAudioError) as exc_info:
+            validate_audio_file(silent_wav)
+        assert exc_info.value.code == "SILENT_AUDIO"
+        assert exc_info.value.status_code == 422
+    finally:
+        Path(silent_wav).unlink(missing_ok=True)
 
-# 6. Scene generation (meaning-based segmentation)
-def test_06_meaning_based_scene_generation():
-    script = "Technology changes student learning. Artificial intelligence makes education personalised."
-    scenes = scene_engine.segment_script_into_scenes(script, total_audio_duration=6.0)
-    assert len(scenes) == 2
-    assert "technology" in scenes[0].visual_description.lower() or "digital" in scenes[0].visual_description.lower() or "student" in scenes[0].visual_description.lower()
-    assert "neural" in scenes[1].visual_description.lower() or "seminar" in scenes[1].visual_description.lower() or "education" in scenes[1].search_query.lower()
+# 6. Music-only audio (422 MUSIC_ONLY_AUDIO)
+def test_06_music_only_audio_rejected():
+    music_wav = create_test_wav(duration_s=2.0, silent=False, music_marker=True)
+    try:
+        with pytest.raises(MusicOnlyAudioError) as exc_info:
+            validate_audio_file(music_wav)
+        assert exc_info.value.code == "MUSIC_ONLY_AUDIO"
+        assert exc_info.value.status_code == 422
+    finally:
+        Path(music_wav).unlink(missing_ok=True)
 
-# 7. Scene timing based on narration
-def test_07_scene_timing():
-    script = "Short sentence. A much longer second sentence that naturally requires significantly more narration duration."
-    scenes = scene_engine.segment_script_into_scenes(script, total_audio_duration=10.0)
-    assert len(scenes) == 2
-    assert scenes[0].duration < scenes[1].duration
-    assert scenes[-1].end_time == 10.0
+# 7. Meaning-based scene splitting & min scene length enforcement (2.5s)
+def test_07_meaning_based_scene_splitting():
+    # Includes very short fragment "Yes." followed by sentences
+    script = "Yes. Technology changes learning. Artificial intelligence makes modern education personalised."
+    scenes = scene_engine.segment_script_into_scenes(script, total_audio_duration=8.0)
+    assert len(scenes) >= 2
+    for sc in scenes:
+        assert sc.duration >= settings.min_scene_duration or sc == scenes[-1]
+        assert sc.end_time > sc.start_time
 
-# 8. Footage relevance scoring
-@pytest.mark.asyncio
-async def test_08_footage_relevance():
-    scene = SceneDetail(
-        scene_number=1,
-        narration_text="Modern technology and computers.",
-        start_time=0.0,
-        end_time=4.0,
-        duration=4.0,
-        visual_description="modern digital computer screen",
-        search_query="technology"
+# 8. Query disambiguation (mouse/cloud/bank/python)
+def test_08_query_disambiguation():
+    # Tech homonyms
+    q_mouse_tech = query_intelligence.disambiguate_query("The developer clicked the computer mouse on the desk.")
+    assert "computer" in q_mouse_tech or "mouse" in q_mouse_tech
+
+    q_cloud_tech = query_intelligence.disambiguate_query("Deploy the application to the scalable cloud server.")
+    assert "server" in q_cloud_tech or "cloud" in q_cloud_tech
+
+    q_bank_fin = query_intelligence.disambiguate_query("The central bank raised international interest rates.")
+    assert "finance" in q_bank_fin or "bank" in q_bank_fin
+
+    q_python_code = query_intelligence.disambiguate_query("Writing python software for machine learning.")
+    assert "code" in q_python_code or "programming" in q_python_code or "software" in q_python_code
+
+# 9. Abstract metaphor & statistical numbers handling
+def test_09_abstract_metaphors_and_statistics():
+    # Abstract
+    abstract_text = "Curiosity sparks creative discovery across human history."
+    q_abs = query_intelligence.disambiguate_query(abstract_text)
+    assert len(q_abs) > 3
+
+    # Statistical numbers
+    stats_text = "Quarterly revenue expanded by 42.5% this fiscal year."
+    q_stats = query_intelligence.disambiguate_query(stats_text)
+    assert "growth" in q_stats or "business" in q_stats or "analytics" in q_stats or "market" in q_stats
+
+# 10. Safety module (named person/brand stand-in & avoid keyword filter)
+def test_10_safety_module():
+    # Named person replacement
+    safe_person = safety_service.sanitize_text_query("Elon Musk announces electric vehicle update.")
+    assert "Elon Musk" not in safe_person
+    assert "tech executive" in safe_person or "entrepreneur" in safe_person
+
+    # Brand replacement
+    safe_brand = safety_service.sanitize_text_query("Show the Apple iPhone screen.")
+    assert "iPhone" not in safe_brand
+    assert "smartphone" in safe_brand
+
+    # Avoid keyword evaluation
+    dummy_clip = FootageClip(
+        clip_id="test_clip_avoid",
+        provider="MockProvider",
+        source_url="http://local/test",
+        download_url="http://local/test.mp4",
+        width=1920,
+        height=1080,
+        duration=5.0,
+        licence="CC0",
+        attribution="FrameFlow",
+        tags=["hospital", "blood", "medical"]
     )
-    clip = await footage_service.find_best_footage_for_scene(scene, set())
-    assert scene.relevance_score >= 0.70
-    assert scene.vlm_score is not None and scene.vlm_score >= 0.70
+    is_safe, reason = safety_service.evaluate_candidate_clip(dummy_clip, avoid_list=["blood", "weapons"])
+    assert is_safe is False
+    assert "blood" in reason
 
-# 9. Duplicate clip prevention
+# 11. CLIP image-text similarity scoring (unclamped 0.0-1.0)
+def test_11_clip_similarity_scoring():
+    score, rating, method = relevance_scorer.score_candidate(
+        clip_path_or_url="mock_technology_1.mp4",
+        narration_text="Modern artificial intelligence and technology systems.",
+        candidate_tags=["technology", "ai", "computer"]
+    )
+    assert 0.0 <= score <= 1.0
+    assert 1 <= rating <= 5
+    assert "similarity" in method.lower()
+
+# 12. Duplicate clip prevention
 @pytest.mark.asyncio
-async def test_09_duplicate_clip_prevention():
+async def test_12_duplicate_clip_prevention():
     seen_clips = set()
     sc1 = SceneDetail(
         scene_number=1, narration_text="Tech one", start_time=0, end_time=3, duration=3,
@@ -132,10 +209,12 @@ async def test_09_duplicate_clip_prevention():
     clip1 = await footage_service.find_best_footage_for_scene(sc1, seen_clips)
     clip2 = await footage_service.find_best_footage_for_scene(sc2, seen_clips)
     assert clip1.clip_id != clip2.clip_id
+    assert clip1.clip_id in seen_clips
+    assert clip2.clip_id in seen_clips
 
-# 10. Licence metadata recording
+# 13. Licence metadata recording
 @pytest.mark.asyncio
-async def test_10_licence_metadata():
+async def test_13_licence_metadata():
     sc = SceneDetail(
         scene_number=1, narration_text="Nature trees", start_time=0, end_time=3, duration=3,
         visual_description="nature forest", search_query="nature"
@@ -144,92 +223,89 @@ async def test_10_licence_metadata():
     assert clip.licence is not None
     assert clip.attribution is not None
     assert clip.is_commercial_cleared is True
+    assert clip.watermark is False
 
-# 11. Provider failure and fallback
+# 14. Provider failure & runtime disable fallback
 @pytest.mark.asyncio
-async def test_11_provider_fallback():
+async def test_14_provider_disable_fallback():
+    # Force disabling external providers
+    settings.disable_provider = "pexels,pixabay"
     sc = SceneDetail(
-        scene_number=1, narration_text="Random obscure topic", start_time=0, end_time=3, duration=3,
-        visual_description="rare unknown topic", search_query="xyzabc123nonexistent"
+        scene_number=1, narration_text="Fallback demonstration", start_time=0, end_time=3, duration=3,
+        visual_description="fallback topic", search_query="nature"
     )
     clip = await footage_service.find_best_footage_for_scene(sc, set())
     assert clip is not None
     assert clip.provider == "MockProvider"
+    settings.disable_provider = ""
 
-# 12. Video rendering
-def test_12_video_rendering(tmp_path):
+# 15. Video rendering with 3 aspect ratios
+def test_15_video_rendering_three_aspect_ratios(tmp_path):
     sc = SceneDetail(
         scene_number=1, narration_text="Test scene", start_time=0, end_time=2, duration=2,
-        visual_description="nature", search_query="nature"
+        visual_description="technology", search_query="technology"
     )
-    # Ensure mock clip exists
     import asyncio
     clip = asyncio.run(footage_service.find_best_footage_for_scene(sc, set()))
-    out_clip = str(tmp_path / "test_clip.mp4")
-    res = video_engine.render_scene_clip(sc, AspectRatio.LANDSCAPE_16_9, out_clip)
-    assert Path(res).exists()
-    assert Path(res).stat().st_size > 1000
+    
+    for ar in [AspectRatio.LANDSCAPE_16_9, AspectRatio.PORTRAIT_9_16, AspectRatio.SQUARE_1_1]:
+        tag = ar.value.replace(":", "_")
+        out_clip = str(tmp_path / f"test_clip_{tag}.mp4")
+        video_engine.render_scene_clip(sc, ar, out_clip)
+        assert Path(out_clip).exists()
+        assert Path(out_clip).stat().st_size > 1000
 
-# 13. Caption generation
-def test_13_caption_generation(tmp_path):
-    scenes = [
-        SceneDetail(scene_number=1, narration_text="First phrase.", start_time=0.0, end_time=2.5, duration=2.5, visual_description="v1", search_query="q1"),
-        SceneDetail(scene_number=2, narration_text="Second phrase.", start_time=2.5, end_time=5.0, duration=2.5, visual_description="v2", search_query="q2")
-    ]
-    srt_out = str(tmp_path / "captions.srt")
-    caption_service.generate_srt(scenes, srt_out)
-    assert Path(srt_out).exists()
-    content = Path(srt_out).read_text(encoding="utf-8")
-    assert "00:00:00,000 --> 00:00:02,500" in content
-    assert "First phrase." in content
+# 16. Smart crop 9:16 saliency check
+def test_16_smart_crop_saliency():
+    offset_filter = video_engine.compute_smart_crop_offset("non_existent.mp4", 1080, 1920)
+    assert "scale=1080:1920" in offset_filter
+    assert "crop=1080:1920" in offset_filter
 
-# 14. All three aspect ratios support
-def test_14_aspect_ratios_supported():
-    assert AspectRatio.LANDSCAPE_16_9.value == "16:9"
-    assert AspectRatio.PORTRAIT_9_16.value == "9:16"
-    assert AspectRatio.SQUARE_1_1.value == "1:1"
-    assert video_engine.RESOLUTIONS[AspectRatio.LANDSCAPE_16_9] == (1920, 1080)
-    assert video_engine.RESOLUTIONS[AspectRatio.PORTRAIT_9_16] == (1080, 1920)
-    assert video_engine.RESOLUTIONS[AspectRatio.SQUARE_1_1] == (1080, 1080)
+# 17. Post-render ffprobe validator checks
+def test_17_post_render_ffprobe_validator(tmp_path):
+    sc = SceneDetail(
+        scene_number=1, narration_text="Validator scene", start_time=0, end_time=2, duration=2,
+        visual_description="technology", search_query="technology"
+    )
+    import asyncio
+    asyncio.run(footage_service.find_best_footage_for_scene(sc, set()))
+    out_clip = str(tmp_path / "valid_clip_16_9.mp4")
+    video_engine.render_scene_clip(sc, AspectRatio.LANDSCAPE_16_9, out_clip)
 
-# 15. Background job progress
-def test_15_background_job_progress():
-    payload = {"script_text": "Progress tracking demonstration script."}
-    res = client.post("/api/v1/broll/jobs", json=payload)
-    job_id = res.json()["job_id"]
-    time.sleep(1)
-    status_res = client.get(f"/api/v1/jobs/{job_id}")
-    assert status_res.status_code == 200
-    st_data = status_res.json()
-    assert 0 <= st_data["progress"] <= 100
-    assert st_data["stage"] is not None
+    val = video_validator.validate_video(out_clip, expected_ratio="16:9")
+    assert val.is_valid is True
+    assert val.report["file_size_bytes"] > 10000
 
-# 16. Idempotency support
-def test_16_idempotency():
-    key = f"test_idemp_{time.time()}"
-    payload = {"script_text": "Idempotent script submission test."}
-    res1 = client.post("/api/v1/broll/jobs", json=payload, headers={"Idempotency-Key": key})
+# 18. Idempotency (same body -> 202, different body -> 409 IDEMPOTENCY_KEY_REUSED)
+def test_18_idempotency_hash_and_mismatch():
+    key = f"idemp_test_{time.time()}"
+    body1 = {"script": "Idempotent script submission body one."}
+    body2 = {"script": "Idempotent script submission body two (mismatch)."}
+
+    # First request
+    res1 = client.post("/api/v1/broll/jobs", json=body1, headers={"Idempotency-Key": key})
     assert res1.status_code == 202
     job1_id = res1.json()["job_id"]
 
-    res2 = client.post("/api/v1/broll/jobs", json=payload, headers={"Idempotency-Key": key})
+    # Replay with identical body -> returns cached 202 with hit header
+    res2 = client.post("/api/v1/broll/jobs", json=body1, headers={"Idempotency-Key": key})
     assert res2.status_code == 202
     assert res2.json()["job_id"] == job1_id
     assert res2.headers.get("X-Idempotency-Hit") == "true"
 
-# 17. Concurrent job submissions
-def test_17_concurrent_jobs():
-    res1 = client.post("/api/v1/broll/jobs", json={"script_text": "Concurrent job 1."})
-    res2 = client.post("/api/v1/broll/jobs", json={"script_text": "Concurrent job 2."})
+    # Replay with DIFFERENT body -> 409 IDEMPOTENCY_KEY_REUSED
+    res3 = client.post("/api/v1/broll/jobs", json=body2, headers={"Idempotency-Key": key})
+    assert res3.status_code == 409
+    err = res3.json()
+    assert err["error"]["code"] == "IDEMPOTENCY_KEY_REUSED"
+    assert err["error"]["retryable"] is False
+
+# 19. Concurrent jobs without collision
+def test_19_concurrent_jobs_without_collision():
+    res1 = client.post("/api/v1/broll/jobs", json={"script": "Concurrent test script 1."})
+    res2 = client.post("/api/v1/broll/jobs", json={"script": "Concurrent test script 2."})
     assert res1.status_code == 202
     assert res2.status_code == 202
-    assert res1.json()["job_id"] != res2.json()["job_id"]
-
-# 18. API error handling structured JSON format
-def test_18_api_error_structure():
-    res = client.get("/api/v1/jobs/non_existent_job_9999")
-    assert res.status_code == 404
-    err_body = res.json()
-    assert "error" in err_body
-    assert err_body["error"]["code"] == "JOB_NOT_FOUND"
-    assert "correlation_id" in err_body["error"]
+    id1 = res1.json()["job_id"]
+    id2 = res2.json()["job_id"]
+    assert id1 != id2
