@@ -1,0 +1,40 @@
+services:
+  frameflow-ai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: frameflow-engine
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./storage:/app/storage
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - STORAGE_DIR=/app/storage
+      - BASE_URL=http://localhost:8000
+      - PEXELS_API_KEY=${PEXELS_API_KEY:-}
+      - PIXABAY_API_KEY=${PIXABAY_API_KEY:-}
+      - ENABLE_MOCK_FOOTAGE=true
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET:-frameflow_default_secret_key_2026}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # Optional S3-compatible local object storage
+  minio:
+    image: minio/minio:latest
+    container_name: frameflow-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadminpassword
+    command: server /data --console-address ":9001"
+    volumes:
+      - ./storage/minio_data:/data
+    restart: unless-stopped

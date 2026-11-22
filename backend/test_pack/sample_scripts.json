@@ -1,0 +1,82 @@
+[
+  {
+    "id": "tech_ai_education",
+    "title": "Technology & AI in Modern Education",
+    "language": "en",
+    "script": "Technology is transforming the modern classroom. Artificial intelligence creates personalised learning for students, adapting lessons in real time.",
+    "expected_themes": ["technology", "education"],
+    "min_scenes": 2
+  },
+  {
+    "id": "renewable_energy",
+    "title": "Renewable Wind and Solar Energy",
+    "language": "en",
+    "script": "Clean renewable energy powers modern sustainable cities. Giant wind turbines and solar panels generate zero emission electricity for millions.",
+    "expected_themes": ["nature", "city"],
+    "min_scenes": 2
+  },
+  {
+    "id": "global_finance",
+    "title": "Global Financial Markets & Analytics",
+    "language": "en",
+    "script": "Dynamic stock trading floors monitor international commerce. Algorithmic financial analytics optimize market growth across the economy.",
+    "expected_themes": ["business"],
+    "min_scenes": 2
+  },
+  {
+    "id": "healthcare_robotics",
+    "title": "Healthcare Diagnostics & Precision Medicine",
+    "language": "en",
+    "script": "Advanced hospitals leverage high-precision imaging systems. Doctors analyze digital scans to provide life-saving clinical interventions.",
+    "expected_themes": ["healthcare"],
+    "min_scenes": 2
+  },
+  {
+    "id": "smart_cities",
+    "title": "Smart Cities & Autonomous Mobility",
+    "language": "en",
+    "script": "Urban architecture evolves with interconnected transit systems. Autonomous electric mobility reduces carbon emissions in modern metropolitan centres.",
+    "expected_themes": ["city", "technology"],
+    "min_scenes": 2
+  },
+  {
+    "id": "hindi_space_exploration",
+    "title": "Hindi Voiceover – Space Research (भारतीय अंतरिक्ष अनुसंधान)",
+    "language": "hi",
+    "script": "अंतरिक्ष विज्ञान मानव प्रगति की नई सीमाएं खोल रहा है। उपग्रह और आधुनिक रॉकेट पृथ्वी के पर्यावरण पर निरंतर नजर रखते हैं।",
+    "expected_themes": ["technology", "nature"],
+    "min_scenes": 2
+  },
+  {
+    "id": "tamil_agriculture",
+    "title": "Tamil Voiceover – Agricultural Innovation (விவசாய தொழில்நுட்பம்)",
+    "language": "ta",
+    "script": "நவீன விவசாய தொழில்நுட்பம் பயிர் உற்பத்தியை அதிகரிக்கிறது. இயற்கை வளங்களை பாதுகாக்கும் புதிய முறைகள் விவசாயிகளுக்கு உதவுகின்றன.",
+    "expected_themes": ["nature", "education"],
+    "min_scenes": 2
+  },
+  {
+    "id": "startup_pitch",
+    "title": "High Velocity Startup Product Launch",
+    "language": "en",
+    "script": "Speed defines revolutionary technology ventures. Agile engineering teams ship intelligent collaborative software that scales instantly.",
+    "expected_themes": ["business", "technology"],
+    "min_scenes": 2
+  },
+  {
+    "id": "abstract_philosophy",
+    "title": "Abstract Thought to Concrete Action",
+    "language": "en",
+    "script": "Curiosity sparks creative discovery across human history. Bold imagination bridges the horizon between ancient contemplation and modern science.",
+    "expected_themes": ["education", "nature"],
+    "min_scenes": 2
+  },
+  {
+    "id": "metrics_heavy_report",
+    "title": "Numerical & Economic Metrics Review",
+    "language": "en",
+    "script": "Quarterly revenue expanded by 42.5% this fiscal year. Strategic capital investments elevated productivity across 15 international divisions.",
+    "expected_themes": ["business"],
+    "min_scenes": 2
+  }
+]
