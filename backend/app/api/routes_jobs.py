@@ -1,7 +1,8 @@
 import uuid
 import json
 import base64
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
+from pydantic import BaseModel, Field
 from fastapi import APIRouter, Header, Response, status, Request, UploadFile, File, Form
 from app.models.api_schemas import (
     BrollJobCreateRequest, JobDetailResponse, JobResultResponse, SceneReplaceRequest,
@@ -151,3 +152,20 @@ async def list_recent_jobs(limit: int = 20):
         except Exception:
             pass
     return out
+
+class JobRatingPayload(BaseModel):
+    ratings: dict = Field(default_factory=dict)
+    notes: Optional[str] = None
+    overall_score: Optional[float] = None
+
+@router.post("/jobs/{job_id}/rate")
+async def rate_job_quality(job_id: str, payload: JobRatingPayload):
+    """
+    Saves human quality rating and feedback to /storage/ratings/<job_id>.json.
+    """
+    return job_manager.save_user_rating(
+        job_id=job_id,
+        ratings=payload.ratings,
+        notes=payload.notes,
+        overall_score=payload.overall_score
+    )

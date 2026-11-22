@@ -305,7 +305,9 @@ export default function MultiTrackStudio({ currentJob, currentResult, currentJob
                       alignItems: 'center',
                       justifyContent: 'center'
                     }}>
-                      {ft?.download_url ? (
+                      {sc.thumbnail_url ? (
+                        <img src={sc.thumbnail_url} alt={`Scene ${sc.scene_number}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : ft?.download_url ? (
                         <video src={ft.download_url} muted loop style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
                         <Film size={24} color="#888" />
@@ -599,7 +601,7 @@ export default function MultiTrackStudio({ currentJob, currentResult, currentJob
                   boxShadow: '0 3px 10px rgba(124, 110, 230, 0.3)'
                 }}
               >
-                <Sparkles size={14} /> Open VLM Quality Report
+                <Sparkles size={14} /> Open Quality Report
               </button>
             </div>
           ) : (

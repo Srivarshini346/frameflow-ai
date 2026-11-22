@@ -4,7 +4,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg?logo=fastapi)](https://fastapi.tiangolo.com)
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB.svg?logo=python)](https://python.org)
 [![FFmpeg](https://img.shields.io/badge/FFmpeg-Native_30FPS-007808.svg?logo=ffmpeg)](https://ffmpeg.org)
-[![Tests](https://img.shields.io/badge/Tests-21_Passed-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-29_Passed-brightgreen.svg)]()
 [![License](https://img.shields.io/badge/Licence-100%25_Commercial_Cleared-blue.svg)]()
 
 FrameFlow AI is a high-performance, commercially cleared AI video production engine designed for the IncuBrix PS3 Technical Assessment. It transforms scripts and voiceovers into professional, narrated videos with intelligent B-roll selection across **16:9 Landscape**, **9:16 Portrait**, and **1:1 Square** formats with synchronized narration and burned-in captions.
@@ -118,6 +118,35 @@ docker compose run --rm tests
 
 ---
 
+### Option C: Real Stock Footage Execution (Pexels / Pixabay)
+
+FrameFlow AI operates out-of-the-box using procedural CC0 synthetic footage for zero-key local testing. To enable **real, high-definition stock footage**:
+
+1. **Obtain Free API Keys:**
+   - **Pexels API Key:** Register free at [https://www.pexels.com/api/](https://www.pexels.com/api/) (instant API key generation, commercial license cleared).
+   - **Pixabay API Key:** Register free at [https://pixabay.com/api/docs/](https://pixabay.com/api/docs/) (commercial license cleared).
+
+2. **Add to `.env` File:**
+   ```bash
+   cp .env.example .env
+   ```
+   Add your keys in `.env`:
+   ```ini
+   PEXELS_API_KEY=your_pexels_api_key_here
+   PIXABAY_API_KEY=your_pixabay_api_key_here
+   ```
+
+3. **Verify Real Footage & Disambiguation:**
+   ```bash
+   # Run live 6-line coffee production test with real stock video:
+   python scripts/real_run.py
+
+   # Run homonym & metaphor semantic disambiguation tests:
+   python scripts/test_hard_queries.py
+   ```
+
+---
+
 ## 4. API Endpoints Reference
 
 | Method | Endpoint | Description | Status Code |
@@ -127,6 +156,7 @@ docker compose run --rm tests
 | `GET` | `/api/v1/jobs/{job_id}` | Poll job status (`queued`, `running`, `succeeded`, `failed`), progress `0-100%`, and stage | `200 OK` |
 | `GET` | `/api/v1/jobs/{job_id}/result` | Retrieve 6 final deliverable download URLs, metrics, and quality audit | `200 OK` |
 | `POST` | `/api/v1/jobs/{job_id}/scenes/{sc}/replace` | **Incremental Rerender:** Replace single scene footage and update all aspect ratios | `200 OK` |
+| `POST` | `/api/v1/jobs/{job_id}/rate` | **Human Rating:** Submit 1-5 star ratings and evaluation notes to `/storage/ratings` | `200 OK` |
 | `GET` | `/api/v1/jobs` | List recent jobs with status summaries | `200 OK` |
 | `GET` | `/health` | Deep health check (FFmpeg binary status, storage writeability, version) | `200 OK` |
 | `GET` | `/ready` | Service readiness probe | `200 OK` |

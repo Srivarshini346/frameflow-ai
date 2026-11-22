@@ -1,6 +1,8 @@
 import time
+import json
 import uuid
 from pathlib import Path
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,10 +12,36 @@ from fastapi.exceptions import RequestValidationError
 from app.config import settings
 from app.core.exceptions import FrameFlowError
 from app.core.logger import logger
+from app.services.job_manager import job_manager
 from app.api.routes_jobs import router as jobs_router
 from app.api.routes_health import router as health_router
 from app.api.routes_analytics import router as analytics_router
 from app.api.routes_tts import router as tts_router
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup routine
+    try:
+        # 1. Log configured providers in JSON format (no secrets leaked)
+        provider_summary = settings.get_provider_status_summary()
+        logger.info(f"FrameFlow AI Engine Starting. Providers configured: {json.dumps(provider_summary)}")
+
+        # 2. Detect and delete corrupt files under 1KB
+        if settings.storage_dir.exists():
+            for p in settings.storage_dir.rglob("*.mp4"):
+                try:
+                    if p.is_file() and p.stat().st_size < 1024:
+                        p.unlink()
+                        logger.info(f"Removed corrupt mp4 file (<1KB): {p.name}")
+                except Exception:
+                    pass
+
+        # 3. Clean up orphaned running/queued jobs
+        job_manager.cleanup_orphaned_jobs_on_startup()
+    except Exception as e:
+        logger.warning(f"Startup maintenance warning: {e}")
+
+    yield
 
 app = FastAPI(
     title=settings.app_name,
@@ -21,7 +49,8 @@ app = FastAPI(
     description="Intelligent AI Script and Voiceover to B-roll Video Engine (IncuBrix PS3)",
     docs_url="/docs",
     redoc_url="/redoc",
-    openapi_url="/openapi.json"
+    openapi_url="/openapi.json",
+    lifespan=lifespan
 )
 
 # CORS middleware for modern frontend

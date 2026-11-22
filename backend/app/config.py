@@ -1,12 +1,16 @@
 import os
 import sys
+import json
 import secrets
 from pathlib import Path
 from typing import List, Optional
 from pydantic import BaseModel, Field
+from dotenv import load_dotenv
 
 # Base directories
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+# Load .env reliably from repository root
+load_dotenv(BASE_DIR / ".env")
 DEFAULT_STORAGE_DIR = BASE_DIR / "storage"
 
 class Settings(BaseModel):
@@ -36,15 +40,17 @@ class Settings(BaseModel):
     ffmpeg_binary: str = os.getenv("FFMPEG_BINARY", "")
 
     # ASR (Transcription) Configuration
-    asr_provider: str = os.getenv("ASR_PROVIDER", "mock")  # "faster-whisper" or "mock"
+    asr_provider: str = os.getenv("ASR_PROVIDER", "faster-whisper")  # "faster-whisper" or "mock"
     asr_model_size: str = os.getenv("ASR_MODEL_SIZE", "base")
     asr_device: str = os.getenv("ASR_DEVICE", "cpu")
 
     # TTS Configuration
     tts_provider: str = os.getenv("TTS_PROVIDER", "gtts")  # "gtts", "edge-tts", or "mock"
 
-    # Relevance Scorer Configuration
+    # Query & Relevance Scorer Configuration
+    query_provider: str = os.getenv("QUERY_PROVIDER", "rules")  # "rules", "llm", or "mock"
     relevance_scorer: str = os.getenv("RELEVANCE_SCORER", "clip")  # "clip" or "mock"
+    relevance_min: float = float(os.getenv("RELEVANCE_MIN", "0.40"))
 
     # Footage Provider API keys (Optional)
     pexels_api_key: str = os.getenv("PEXELS_API_KEY", "")
@@ -81,6 +87,17 @@ class Settings(BaseModel):
             return False
         disabled = [p.strip().lower() for p in self.disable_provider.split(",")]
         return name.lower() in disabled
+
+    def get_provider_status_summary(self) -> dict:
+        return {
+            "pexels_configured": bool(self.pexels_api_key and self.pexels_api_key.strip()),
+            "pixabay_configured": bool(self.pixabay_api_key and self.pixabay_api_key.strip()),
+            "mock_enabled": self.enable_mock_footage,
+            "query_provider": self.query_provider,
+            "asr_provider": self.asr_provider,
+            "tts_provider": self.tts_provider,
+            "relevance_scorer": self.relevance_scorer
+        }
 
 settings = Settings()
 settings.storage_dir.mkdir(parents=True, exist_ok=True)

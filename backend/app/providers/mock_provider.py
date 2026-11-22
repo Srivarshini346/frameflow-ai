@@ -2,7 +2,7 @@ import os
 import math
 import hashlib
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from app.providers.base import FootageProviderBase
 from app.models.api_schemas import FootageClip
 from app.config import settings
@@ -44,7 +44,8 @@ class MockFootageProvider(FootageProviderBase):
         self,
         query: str,
         min_duration: float = 3.0,
-        limit: int = 5
+        limit: int = 5,
+        orientation: Optional[str] = None
     ) -> List[FootageClip]:
         """
         Returns high-quality mock clips tailored to the theme and ensures local MP4 files exist.

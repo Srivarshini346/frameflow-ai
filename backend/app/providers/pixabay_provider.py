@@ -1,5 +1,5 @@
 import httpx
-from typing import List
+from typing import List, Optional, Tuple
 from app.providers.base import FootageProviderBase
 from app.models.api_schemas import FootageClip
 from app.config import settings
@@ -20,11 +20,32 @@ class PixabayProvider(FootageProviderBase):
     def is_available(self) -> bool:
         return bool(settings.pixabay_api_key and settings.pixabay_api_key.strip())
 
+    async def check_active_status(self) -> Tuple[bool, str]:
+        if not self.is_available:
+            return False, "No key configured"
+        try:
+            params = {
+                "key": settings.pixabay_api_key,
+                "q": "nature",
+                "per_page": 3
+            }
+            async with httpx.AsyncClient(timeout=4.0) as client:
+                res = await client.get(self.BASE_URL, params=params)
+                if res.status_code == 200:
+                    return True, "Active"
+                elif res.status_code in (400, 401, 403):
+                    return False, "Invalid API key"
+                else:
+                    return False, f"API error ({res.status_code})"
+        except Exception as e:
+            return False, f"Connection error: {str(e)[:30]}"
+
     async def search_footage(
         self,
         query: str,
         min_duration: float = 3.0,
-        limit: int = 5
+        limit: int = 5,
+        orientation: Optional[str] = None
     ) -> List[FootageClip]:
         if not self.is_available:
             return []
@@ -35,6 +56,11 @@ class PixabayProvider(FootageProviderBase):
             "per_page": limit,
             "safesearch": "true"
         }
+        if orientation:
+            if orientation == "portrait":
+                params["orientation"] = "vertical"
+            elif orientation == "landscape":
+                params["orientation"] = "horizontal"
 
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
@@ -61,6 +87,12 @@ class PixabayProvider(FootageProviderBase):
                     author = hit.get("user", "Unknown Artist")
                     page_url = hit.get("pageURL", "https://pixabay.com")
 
+                    # Extract tags
+                    tags_raw = hit.get("tags", "")
+                    tags_list = [t.strip().lower() for t in tags_raw.split(",") if t.strip()]
+                    if query not in tags_list:
+                        tags_list.insert(0, query)
+
                     clip = FootageClip(
                         clip_id=f"pixabay_{hit.get('id')}",
                         provider="Pixabay",
@@ -74,7 +106,7 @@ class PixabayProvider(FootageProviderBase):
                         attribution=f"Video by {author} from Pixabay",
                         is_commercial_cleared=True,
                         is_ai_generated=False,
-                        tags=[query]
+                        tags=tags_list
                     )
                     clips.append(clip)
 

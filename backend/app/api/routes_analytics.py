@@ -10,12 +10,15 @@ from app.services.footage_service import footage_service
 router = APIRouter(prefix="/analytics", tags=["Analytics & Providers"])
 
 @router.get("")
-def get_analytics():
+async def get_analytics():
     providers_info = []
     for p in footage_service.providers:
+        is_active, status_msg = await p.check_active_status()
         providers_info.append({
             "name": p.name,
             "is_available": p.is_available,
+            "is_active": is_active,
+            "status": status_msg,
             "type": "api" if "Mock" not in p.name else "synthetic_cc0",
             "commercial_cleared": True
         })

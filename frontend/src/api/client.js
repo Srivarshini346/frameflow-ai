@@ -73,3 +73,16 @@ export async function getHealthStatus() {
   }
   return res.json();
 }
+
+export async function rateJob(jobId, ratingData) {
+  const res = await fetch(`${API_BASE}/jobs/${jobId}/rate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(ratingData),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `Failed to submit rating: ${res.status}`);
+  }
+  return res.json();
+}

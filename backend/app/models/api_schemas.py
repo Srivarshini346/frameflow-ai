@@ -161,6 +161,7 @@ class SceneDetail(BaseModel):
     selection_reason: str = ""
     relevance_score: float = Field(default=0.0, ge=0.0, le=1.0)
     clip_rating: int = Field(default=3, ge=1, le=5)
+    thumbnail_url: Optional[str] = None
     warnings: List[str] = Field(default_factory=list)
     status: str = "ready"
 
@@ -200,3 +201,5 @@ class HealthStatus(BaseModel):
     storage_writable: bool
     database_connected: bool = True
     active_jobs: int = 0
+    details: Optional[str] = None
+    providers_summary: Optional[Dict[str, Any]] = None

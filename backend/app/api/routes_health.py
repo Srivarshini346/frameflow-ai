@@ -28,13 +28,21 @@ def health_check():
     except Exception:
         pass
 
+    footage_detail = (
+        "All systems operational (Real stock footage providers active)"
+        if (settings.pexels_api_key or settings.pixabay_api_key)
+        else "No PEXELS_API_KEY / PIXABAY_API_KEY: using procedural fallback. Set keys in .env to enable real stock footage."
+    )
+
     return HealthStatus(
         status="healthy" if (ffmpeg_ok and storage_writable) else "degraded",
         version=settings.version,
         ffmpeg_available=ffmpeg_ok,
         ffmpeg_version=ffmpeg_version,
         storage_writable=storage_writable,
-        active_jobs=0
+        active_jobs=0,
+        details=footage_detail,
+        providers_summary=settings.get_provider_status_summary()
     )
 
 @router.get("/ready")

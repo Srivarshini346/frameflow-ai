@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: "FrameFlow AI \u2013 Intelligent B-roll Studio"
+  title: FrameFlow AI – Intelligent B-roll Studio
   description: Intelligent AI Script and Voiceover to B-roll Video Engine (IncuBrix
     PS3)
   version: 1.1.0
@@ -232,6 +232,38 @@ paths:
                 items:
                   $ref: '#/components/schemas/JobDetailResponse'
                 title: Response List Recent Jobs Api V1 Jobs Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/jobs/{job_id}/rate:
+    post:
+      tags:
+      - B-roll Jobs
+      summary: Rate Job Quality
+      description: Saves human quality rating and feedback to /storage/ratings/<job_id>.json.
+      operationId: rate_job_quality_api_v1_jobs__job_id__rate_post
+      parameters:
+      - name: job_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Job Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobRatingPayload'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
         '422':
           description: Validation Error
           content:
@@ -545,6 +577,17 @@ components:
           type: integer
           title: Active Jobs
           default: 0
+        details:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Details
+        providers_summary:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Providers Summary
       type: object
       required:
       - status
@@ -603,6 +646,24 @@ components:
       - created_at
       - updated_at
       title: JobDetailResponse
+    JobRatingPayload:
+      properties:
+        ratings:
+          additionalProperties: true
+          type: object
+          title: Ratings
+        notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Notes
+        overall_score:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Overall Score
+      type: object
+      title: JobRatingPayload
     JobResultResponse:
       properties:
         job_id:
@@ -739,6 +800,11 @@ components:
           minimum: 1.0
           title: Clip Rating
           default: 3
+        thumbnail_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Thumbnail Url
         warnings:
           items:
             type: string

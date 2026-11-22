@@ -123,6 +123,34 @@ class VideoEngine:
 
         return output_clip_path
 
+    def extract_scene_thumbnail(self, clip_path: str, output_image_path: str) -> bool:
+        """
+        Extracts a clean, representative 1-frame preview image from the video clip for UI previews.
+        """
+        if not clip_path or not Path(clip_path).exists():
+            return False
+        ffmpeg_exe = settings.get_ffmpeg_path()
+        Path(output_image_path).parent.mkdir(parents=True, exist_ok=True)
+        cmd = [
+            ffmpeg_exe, "-y",
+            "-i", clip_path,
+            "-ss", "00:00:01",
+            "-vframes", "1",
+            "-q:v", "2",
+            output_image_path
+        ]
+        try:
+            res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5)
+            if res.returncode == 0 and Path(output_image_path).exists() and Path(output_image_path).stat().st_size > 0:
+                return True
+            # Fallback to first frame if clip < 1 second
+            cmd[3] = "00:00:00.1"
+            res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5)
+            return res.returncode == 0 and Path(output_image_path).exists() and Path(output_image_path).stat().st_size > 0
+        except Exception as e:
+            logger.debug(f"Thumbnail extraction failed for {clip_path}: {e}")
+            return False
+
     def assemble_full_video(
         self,
         scene_clip_paths: List[str],

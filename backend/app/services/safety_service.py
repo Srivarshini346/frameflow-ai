@@ -14,7 +14,7 @@ class SafetyService:
 
     KNOWN_ENTITIES = {
         # Real people
-        "elon musk": "technology entrepreneur working in modern engineering office",
+        "elon musk": "technology entrepreneur and tech executive stage presentation",
         "steve jobs": "visionary product designer in modern tech studio",
         "donald trump": "government building and diplomatic conference hall",
         "narendra modi": "international diplomatic summit with flags",
@@ -24,8 +24,9 @@ class SafetyService:
         "tim cook": "corporate technology leadership presentation",
         
         # Commercial brands
-        "apple": "sleek modern mobile smartphone with clean glass screen",
+        "apple iphone": "smartphone modern display",
         "iphone": "modern smartphone with glass display",
+        "apple": "sleek modern mobile smartphone with clean glass screen",
         "google": "high speed internet digital data search visual",
         "microsoft": "enterprise cloud computing desktop workflow",
         "tesla": "modern electric vehicle driving on scenic highway",
@@ -36,7 +37,8 @@ class SafetyService:
 
     SENSITIVE_NEWS_TERMS = {
         "death", "died", "funeral", "tragedy", "disaster", "earthquake", "flood",
-        "crash", "casualty", "mourning", "victim", "crisis", "fatal", "grief"
+        "crash", "casualty", "mourning", "victim", "crisis", "fatal", "grief",
+        "war", "crime", "violence", "conflict"
     }
 
     BLOCKLIST_GRAPHIC_CELEBRATORY = {

@@ -167,6 +167,9 @@ class JobManager:
         new_clip = await footage_service.find_best_footage_for_scene(target_scene, seen_clips, avoid_list=avoid_list)
         await footage_service.ensure_clip_downloaded(new_clip, job_dir)
         target_scene.selected_footage = new_clip
+        thumb_file = job_dir / f"thumb_scene_{scene_number}.jpg"
+        if video_engine.extract_scene_thumbnail(new_clip.local_path, str(thumb_file)):
+            target_scene.thumbnail_url = f"/storage/jobs/{job_id}/thumb_scene_{scene_number}.jpg"
         scenes[target_scene_idx] = target_scene.dict()
 
         aspect_ratios = [AspectRatio(r) for r in job["request"].get("aspect_ratios", ["16:9", "9:16", "1:1"])]
@@ -306,9 +309,17 @@ class JobManager:
             t3 = time.time()
             self._update_stage(job_id, "sourcing_footage", 50)
             seen_clips: Set[str] = set()
+            ratios_raw = req.get("aspect_ratios", ["16:9", "9:16", "1:1"])
+            primary_ratio = str(ratios_raw[0].value if hasattr(ratios_raw[0], "value") else ratios_raw[0]) if ratios_raw else "16:9"
+
             for sc in scenes:
-                clip = await footage_service.find_best_footage_for_scene(sc, seen_clips, avoid_list=avoid_list)
-                await footage_service.ensure_clip_downloaded(clip, job_dir)
+                clip = await footage_service.find_best_footage_for_scene(
+                    sc, seen_clips, avoid_list=avoid_list, aspect_ratio=primary_ratio
+                )
+                local_path = await footage_service.ensure_clip_downloaded(clip, job_dir)
+                thumb_file = job_dir / f"thumb_scene_{sc.scene_number}.jpg"
+                if video_engine.extract_scene_thumbnail(local_path, str(thumb_file)):
+                    sc.thumbnail_url = f"/storage/jobs/{job_id}/thumb_scene_{sc.scene_number}.jpg"
 
             job["scenes"] = [s.dict() for s in scenes]
             self._persist(job_id)
@@ -485,5 +496,59 @@ class JobManager:
             cur = conn.execute("SELECT data_json FROM jobs ORDER BY created_at DESC LIMIT ?", (limit,))
             rows = cur.fetchall()
             return [json.loads(r[0]) for r in rows]
+
+    def cleanup_orphaned_jobs_on_startup(self):
+        """
+        Marks any queued or running jobs from a previous server process as failed,
+        preventing infinite loading spinners in the history and workspace views.
+        """
+        try:
+            with sqlite3.connect(self._db_path) as conn:
+                conn.execute("""
+                    UPDATE jobs
+                    SET status = 'failed',
+                        stage = 'interrupted',
+                        error = 'Interrupted by server restart',
+                        updated_at = datetime('now')
+                    WHERE status IN ('running', 'queued')
+                """)
+                conn.commit()
+            logger.info("Checked and recovered orphaned running/queued jobs on startup.")
+        except Exception as e:
+            logger.warning(f"Error recovering orphaned jobs on startup: {e}")
+
+    def save_user_rating(
+        self,
+        job_id: str,
+        ratings: Dict[str, Any],
+        notes: Optional[str] = None,
+        overall_score: Optional[float] = None
+    ) -> Dict[str, Any]:
+        """
+        Persists human-in-the-loop quality evaluation ratings and notes to storage.
+        """
+        import json
+        ratings_dir = settings.storage_dir / "ratings"
+        ratings_dir.mkdir(parents=True, exist_ok=True)
+        rating_file = ratings_dir / f"{job_id}.json"
+
+        rating_data = {
+            "job_id": job_id,
+            "ratings": ratings,
+            "notes": notes or "",
+            "overall_score": overall_score,
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        }
+        with open(rating_file, "w", encoding="utf-8") as f:
+            json.dump(rating_data, f, indent=2)
+
+        job = self._jobs.get(job_id) or self._load_from_db(job_id)
+        if job and job.get("result"):
+            if "quality_report" in job["result"]:
+                job["result"]["quality_report"]["human_ratings"] = rating_data
+                self._persist(job_id)
+
+        logger.info(f"Saved human rating for job {job_id} to {rating_file}")
+        return rating_data
 
 job_manager = JobManager()

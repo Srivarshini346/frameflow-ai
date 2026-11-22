@@ -33,22 +33,22 @@ class RelevanceScorerBase(ABC):
     def map_score_to_rating(score: float) -> int:
         """
         Maps a 0.0 - 1.0 relevance score to a 1 - 5 star rating:
-        0.00 - 0.25 -> 1
-        0.25 - 0.45 -> 2
-        0.45 - 0.65 -> 3
-        0.65 - 0.80 -> 4
         0.80 - 1.00 -> 5
+        0.65 - 0.79 -> 4
+        0.50 - 0.64 -> 3
+        0.35 - 0.49 -> 2
+        < 0.35      -> 1
         """
-        if score < 0.25:
-            return 1
-        elif score < 0.45:
-            return 2
-        elif score < 0.65:
-            return 3
-        elif score < 0.80:
-            return 4
-        else:
+        if score >= 0.80:
             return 5
+        elif score >= 0.65:
+            return 4
+        elif score >= 0.50:
+            return 3
+        elif score >= 0.35:
+            return 2
+        else:
+            return 1
 
 class MockRelevanceScorer(RelevanceScorerBase):
     """
@@ -57,7 +57,7 @@ class MockRelevanceScorer(RelevanceScorerBase):
     """
     @property
     def name(self) -> str:
-        return "Mock Semantic Scorer (Calibrated Keyword Cosine)"
+        return "Keyword overlap heuristic"
 
     def score_candidate(
         self,
@@ -90,7 +90,7 @@ class MockRelevanceScorer(RelevanceScorerBase):
                 score = min(0.98, round(0.40 + jaccard * 1.8, 3))
 
         rating = self.map_score_to_rating(score)
-        return score, rating, "Calibrated Semantic Token Similarity"
+        return score, rating, "Keyword overlap similarity heuristic"
 
 class CLIPRelevanceScorer(RelevanceScorerBase):
     """
@@ -175,7 +175,7 @@ class CLIPRelevanceScorer(RelevanceScorerBase):
             raw_score = max(0.0, min(1.0, (similarity - 0.12) / 0.35))
             score = round(raw_score, 3)
             rating = self.map_score_to_rating(score)
-            return score, rating, "CLIP image-text similarity (open_clip)"
+            return score, rating, "CLIP ViT-B/32"
         except Exception as e:
             logger.warning(f"CLIP scoring error: {e}")
             return MockRelevanceScorer().score_candidate(clip_path_or_url, narration_text, candidate_tags)

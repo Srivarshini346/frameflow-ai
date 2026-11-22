@@ -91,20 +91,29 @@ export default function Navbar({ activeTab, setActiveTab, health }) {
           })}
         </nav>
 
-        {/* System Health Pill */}
+        {/* System Health Pill with Tooltip */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '6px 12px',
-            borderRadius: 'var(--radius-full)',
-            backgroundColor: isHealthy ? 'var(--accent-mint-light)' : 'var(--accent-coral-light)',
-            color: isHealthy ? 'var(--accent-mint)' : 'var(--accent-coral)',
-            fontSize: '12px',
-            fontWeight: 600,
-            border: `1px solid ${isHealthy ? '#BCECDA' : '#FCD0D0'}`
-          }}>
+          <div
+            title={
+              health?.details ||
+              (health?.providers_summary?.pexels_configured || health?.providers_summary?.pixabay_configured
+                ? "All systems operational (Pexels / Pixabay stock footage active)"
+                : "No PEXELS_API_KEY: using gradient fallback. Set keys in .env to enable real stock footage.")
+            }
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 12px',
+              borderRadius: 'var(--radius-full)',
+              backgroundColor: isHealthy ? 'var(--accent-mint-light)' : 'var(--accent-coral-light)',
+              color: isHealthy ? 'var(--accent-mint)' : 'var(--accent-coral)',
+              fontSize: '12px',
+              fontWeight: 600,
+              border: `1px solid ${isHealthy ? '#BCECDA' : '#FCD0D0'}`,
+              cursor: 'help'
+            }}
+          >
             <span style={{
               width: '8px',
               height: '8px',
@@ -112,7 +121,14 @@ export default function Navbar({ activeTab, setActiveTab, health }) {
               backgroundColor: isHealthy ? 'var(--accent-mint)' : 'var(--accent-coral)',
               display: 'inline-block'
             }} />
-            <span>{isHealthy ? 'Engine Online (FFmpeg 9.0)' : 'Degraded'}</span>
+            <span>
+              {isHealthy 
+                ? (health?.providers_summary?.pexels_configured || health?.providers_summary?.pixabay_configured
+                    ? 'All systems operational (Pexels active)'
+                    : 'Engine Online (Procedural Fallback)')
+                : 'Degraded'
+              }
+            </span>
           </div>
         </div>
       </div>

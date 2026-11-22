@@ -37,21 +37,23 @@ export default function AnalyticsLicenceHub() {
             {[
               {
                 name: 'Pexels Video API Adapter',
-                type: 'REST API Adapter',
-                licence: 'Pexels Commercial License',
-                status: analytics?.providers?.find(p => p.name === 'Pexels')?.is_available ? 'Configured & Online' : 'Available with API Key'
+                type: 'REST API Adapter (1080p stream preference, landscape/portrait)',
+                licence: 'Pexels Commercial License (No attribution required)',
+                status: analytics?.providers?.find(p => p.name === 'Pexels')?.status || 
+                  (analytics?.providers?.find(p => p.name === 'Pexels')?.is_available ? 'Active' : 'No key configured')
               },
               {
                 name: 'Pixabay Video API Adapter',
-                type: 'REST API Adapter',
-                licence: 'Pixabay Content License',
-                status: analytics?.providers?.find(p => p.name === 'Pixabay')?.is_available ? 'Configured & Online' : 'Available with API Key'
+                type: 'REST API Adapter (Large MP4 stream preference)',
+                licence: 'Pixabay Content License (Commercial use cleared)',
+                status: analytics?.providers?.find(p => p.name === 'Pixabay')?.status || 
+                  (analytics?.providers?.find(p => p.name === 'Pixabay')?.is_available ? 'Active' : 'No key configured')
               },
               {
                 name: 'Synthetic Mock Footage Engine',
                 type: 'Local High-Speed Procedural',
                 licence: 'Creative Commons Zero (CC0 1.0)',
-                status: 'Active (Always Available Offline)'
+                status: 'Active (Always Available Offline Fallback)'
               }
             ].map((p, idx) => (
               <div
