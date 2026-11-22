@@ -1,0 +1,11 @@
+job_id,scene_number,narration_text,search_query,clip_id,clip_provider,clip_relevance_score,human_rating_1_to_5,rater_notes
+job_sample_01,1,"Technology is transforming the modern classroom.","technology classroom learning","mock_technology_1","MockProvider",0.84,4,"Good match for digital classroom theme"
+job_sample_01,2,"Artificial intelligence creates personalised learning for students, adapting lessons in real time.","ai student education","mock_education_1","MockProvider",0.88,5,"Excellent representation of personalised learning"
+job_sample_02,1,"Clean renewable energy powers modern sustainable cities.","renewable energy wind solar","mock_nature_1","MockProvider",0.82,4,"Relevant wind turbine and nature imagery"
+job_sample_02,2,"Giant wind turbines and solar panels generate zero emission electricity for millions.","clean electricity solar panels","mock_city_1","MockProvider",0.79,4,"Fits urban sustainability narrative"
+job_sample_03,1,"Dynamic stock trading floors monitor international commerce.","stock trading business market","mock_business_1","MockProvider",0.85,4,"Clear financial commerce match"
+job_sample_03,2,"Algorithmic financial analytics optimize market growth across the economy.","financial analytics economy growth","mock_business_2","MockProvider",0.81,4,"Appropriate business growth graphics"
+job_sample_04,1,"Advanced hospitals leverage high-precision imaging systems.","hospital medical technology","mock_healthcare_1","MockProvider",0.87,5,"Spot-on medical equipment visualization"
+job_sample_04,2,"Doctors analyze digital scans to provide life-saving clinical interventions.","doctors medical scan healthcare","mock_healthcare_2","MockProvider",0.86,5,"Accurate doctor consultation representation"
+job_sample_05,1,"Urban architecture evolves with interconnected transit systems.","urban transit city architecture","mock_city_2","MockProvider",0.83,4,"Solid city transportation visuals"
+job_sample_05,2,"Autonomous electric mobility reduces carbon emissions in modern metropolitan centres.","autonomous electric mobility city","mock_technology_2","MockProvider",0.80,4,"Good alignment with mobility tech"

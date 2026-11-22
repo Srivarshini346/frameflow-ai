@@ -1,0 +1,42 @@
+{
+  "benchmark_timestamp": "2026-11-22T16:51:43Z",
+  "concurrency": {
+    "concurrent_jobs_tested": 4,
+    "all_jobs_succeeded": true,
+    "total_wall_clock_time_seconds": 30.64,
+    "average_job_time_seconds": 23.85,
+    "effective_throughput_jobs_per_minute": 7.83
+  },
+  "resource_utilization": {
+    "initial_memory_mb": 85.0,
+    "peak_memory_mb": 85.0,
+    "memory_delta_mb": 0.0
+  },
+  "cost_model": {
+    "estimated_total_cost_usd": 0.00613,
+    "cost_per_video_minute_usd": 0.0184,
+    "hardware_baseline": "Standard multi-core CPU with zero paid API keys required"
+  },
+  "individual_job_results": [
+    {
+      "job_id": "perf_job_1_1795366272",
+      "status": "succeeded",
+      "duration_seconds": 17.1
+    },
+    {
+      "job_id": "perf_job_2_1795366273",
+      "status": "succeeded",
+      "duration_seconds": 30.62
+    },
+    {
+      "job_id": "perf_job_3_1795366273",
+      "status": "succeeded",
+      "duration_seconds": 30.61
+    },
+    {
+      "job_id": "perf_job_4_1795366273",
+      "status": "succeeded",
+      "duration_seconds": 17.08
+    }
+  ]
+}

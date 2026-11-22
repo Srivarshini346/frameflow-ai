@@ -28,6 +28,7 @@ class SceneEngine:
         script_text: str,
         total_audio_duration: float,
         style: VisualPromptStyle = VisualPromptStyle.CINEMATIC,
+        style_instructions: Optional[str] = None,
         avoid_instructions: Optional[List[str]] = None,
         language: LanguageCode = LanguageCode.EN,
         explicit_scenes: Optional[List[SceneInputRequest]] = None

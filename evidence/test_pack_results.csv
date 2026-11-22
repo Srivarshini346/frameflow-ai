@@ -1,0 +1,11 @@
+script_id,title,language,duration_seconds,scene_count,avg_relevance_score,commercial_cleared_ratio,duplicate_clips_count,processing_time_seconds,validation_passed,status
+tech_ai_education,Technology & AI in Modern Education,en,10.99,2,0.87,1.0,0,16.97,True,succeeded
+renewable_energy,Renewable Wind and Solar Energy,en,11.04,2,0.8,1.0,0,16.05,True,succeeded
+global_finance,Global Financial Markets & Analytics,en,10.13,2,0.83,1.0,0,14.73,True,succeeded
+healthcare_robotics,Healthcare Diagnostics & Precision Medicine,en,10.42,2,0.82,1.0,0,18.55,True,succeeded
+smart_cities,Smart Cities & Autonomous Mobility,en,11.04,2,0.84,1.0,0,17.59,True,succeeded
+hindi_space_exploration,Hindi Voiceover – Space Research (भारतीय अंतरिक्ष अनुसंधान),hi,10.85,2,0.5,1.0,0,15.47,True,succeeded
+tamil_agriculture,Tamil Voiceover – Agricultural Innovation (விவசாய தொழில்நுட்பம்),ta,11.18,2,0.5,1.0,0,19.37,True,succeeded
+startup_pitch,High Velocity Startup Product Launch,en,9.94,2,0.86,1.0,0,15.75,True,succeeded
+abstract_philosophy,Abstract Thought to Concrete Action,en,10.94,2,0.82,1.0,0,17.24,True,succeeded
+metrics_heavy_report,Numerical & Economic Metrics Review,en,12.5,2,0.48,1.0,0,19.47,True,succeeded

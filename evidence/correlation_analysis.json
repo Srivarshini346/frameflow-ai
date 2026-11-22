@@ -1,0 +1,10 @@
+{
+  "sample_size": 10,
+  "pearson_r": 0.7977,
+  "spearman_rho": 0.7977,
+  "t_statistic": 3.7417,
+  "clip_mean": 0.835,
+  "clip_std": 0.0287,
+  "human_mean": 4.3,
+  "human_std": 0.4583
+}

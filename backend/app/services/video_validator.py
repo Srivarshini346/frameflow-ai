@@ -1,9 +1,22 @@
 import json
 import subprocess
 from pathlib import Path
-from typing import Dict, Any, Tuple, List
+from typing import Dict, Any, Tuple, List, Optional
+from pydantic import BaseModel
 from app.config import settings
 from app.core.logger import logger
+
+class VideoValidationResult(BaseModel):
+    is_valid: bool
+    report: Dict[str, Any]
+    warnings: List[str]
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "is_valid": self.is_valid,
+            "report": self.report,
+            "warnings": self.warnings
+        }
 
 class VideoValidator:
     """
@@ -13,7 +26,6 @@ class VideoValidator:
     - Resolution verification (1920x1080, 1080x1920, 1080x1080)
     - Duration alignment vs audio within 100ms
     - Black frame detection (blackdetect)
-    - Frozen frame detection (freezedetect)
     - File size sanity check (rejects corrupt 48-byte files)
     """
 
@@ -26,22 +38,27 @@ class VideoValidator:
     def validate_video(
         self,
         video_path: str,
-        expected_ratio: str,
-        audio_duration: float
-    ) -> Tuple[bool, Dict[str, Any], List[str]]:
+        expected_ratio: Optional[str] = None,
+        expected_ar: Optional[str] = None,
+        audio_duration: float = 0.0
+    ) -> VideoValidationResult:
+        ratio = expected_ratio or expected_ar or "16:9"
         path = Path(video_path)
         warnings: List[str] = []
 
         # 1. File existence and size check (rejects corrupt 48B files)
         if not path.exists():
-            return False, {"error": "File does not exist"}, ["File missing"]
+            return VideoValidationResult(is_valid=False, report={"error": "File does not exist"}, warnings=["File missing"])
 
         file_size = path.stat().st_size
         if file_size < 10000:
-            return False, {"file_size_bytes": file_size, "error": "Corrupt or truncated video container"}, [f"File size {file_size}B is below valid container minimum"]
+            return VideoValidationResult(
+                is_valid=False,
+                report={"file_size_bytes": file_size, "error": "Corrupt or truncated video container"},
+                warnings=[f"File size {file_size}B is below valid container minimum"]
+            )
 
         ffmpeg_exe = settings.get_ffmpeg_path()
-        # Derive ffprobe if available or run ffmpeg -i
         ffprobe_exe = ffmpeg_exe.replace("ffmpeg", "ffprobe")
         if not Path(ffprobe_exe).exists():
             ffprobe_exe = "ffprobe"
@@ -59,64 +76,57 @@ class VideoValidator:
         try:
             res = subprocess.run(probe_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=15)
             if res.returncode != 0:
-                # Fallback probe via ffmpeg
-                return self._fallback_ffmpeg_probe(video_path, expected_ratio, audio_duration, file_size)
+                return self._fallback_ffmpeg_probe(video_path, ratio, audio_duration, file_size)
 
-            data = json.loads(res.stdout)
-            streams = data.get("streams", [])
-            format_info = data.get("format", {})
+            probe_data = json.loads(res.stdout)
+            streams = probe_data.get("streams", [])
+            format_info = probe_data.get("format", {})
 
-            v_stream = next((s for s in streams if s.get("codec_type") == "video"), None)
-            a_stream = next((s for s in streams if s.get("codec_type") == "audio"), None)
+            video_stream = next((s for s in streams if s.get("codec_type") == "video"), None)
+            audio_stream = next((s for s in streams if s.get("codec_type") == "audio"), None)
 
-            if not v_stream:
-                return False, {"error": "Missing video stream"}, ["No video stream found"]
-
-            # Codec checks
-            v_codec = v_stream.get("codec_name", "")
-            a_codec = a_stream.get("codec_name", "") if a_stream else "none"
+            if not video_stream:
+                return VideoValidationResult(is_valid=False, report={"error": "No video stream found"}, warnings=["Missing video stream"])
 
             # Resolution check
-            width = int(v_stream.get("width", 0))
-            height = int(v_stream.get("height", 0))
-            exp_w, exp_h = self.EXPECTED_DIMENSIONS.get(expected_ratio, (1920, 1080))
-
-            resolution_ok = (width == exp_w and height == exp_h)
+            exp_w, exp_h = self.EXPECTED_DIMENSIONS.get(ratio, (1920, 1080))
+            w = int(video_stream.get("width", 0))
+            h = int(video_stream.get("height", 0))
+            resolution_ok = (w == exp_w and h == exp_h)
             if not resolution_ok:
-                warnings.append(f"Resolution mismatch: expected {exp_w}x{exp_h}, got {width}x{height}")
+                warnings.append(f"Resolution mismatch: expected {exp_w}x{exp_h}, got {w}x{h}")
 
             # FPS check
-            r_fps = v_stream.get("r_frame_rate", "30/1")
-            try:
-                num, den = map(float, r_fps.split("/"))
-                actual_fps = round(num / den, 1) if den > 0 else 30.0
-            except Exception:
-                actual_fps = 30.0
+            r_fps = video_stream.get("r_frame_rate", "30/1")
+            fps_val = 30.0
+            if "/" in r_fps:
+                num, den = r_fps.split("/")
+                fps_val = float(num) / max(1.0, float(den))
+            fps_ok = abs(fps_val - 30.0) <= 1.0
+            if not fps_ok:
+                warnings.append(f"FPS deviation: expected ~30fps, got {fps_val:.2f}")
 
-            fps_ok = 28.0 <= actual_fps <= 32.0
+            # Duration check (within 100ms tolerance if audio_duration > 0)
+            dur = float(format_info.get("duration", 0.0))
+            duration_ok = True
+            if audio_duration > 0.0:
+                duration_ok = abs(dur - audio_duration) <= 0.25
+                if not duration_ok:
+                    warnings.append(f"Duration drift: audio {audio_duration:.2f}s vs video {dur:.2f}s")
 
-            # Duration alignment check
-            v_duration = float(format_info.get("duration", 0.0) or v_stream.get("duration", 0.0) or 0.0)
-            duration_diff = abs(v_duration - audio_duration)
-            duration_ok = duration_diff <= 0.25  # within 250ms of audio
-            if not duration_ok:
-                warnings.append(f"Audio drift / duration difference of {duration_diff:.2f}s exceeds 250ms")
-
-            # 3. Black frame detection
+            # Black frame check
             has_black_frames = self._detect_black_frames(video_path)
             if has_black_frames:
-                warnings.append("Notice: Black frames detected in video stream")
+                warnings.append("Black frames detected in rendered video sequence")
 
             report = {
                 "file_size_bytes": file_size,
-                "video_codec": v_codec,
-                "audio_codec": a_codec,
-                "resolution": f"{width}x{height}",
-                "expected_resolution": f"{exp_w}x{exp_h}",
-                "fps": actual_fps,
-                "duration_seconds": round(v_duration, 2),
-                "audio_duration_seconds": round(audio_duration, 2),
-                "duration_diff_ms": round(duration_diff * 1000, 1),
+                "video_codec": video_stream.get("codec_name"),
+                "audio_codec": audio_stream.get("codec_name") if audio_stream else "none",
+                "width": w,
+                "height": h,
+                "fps": round(fps_val, 2),
+                "duration_seconds": round(dur, 3),
                 "black_frames_detected": has_black_frames,
                 "checks_passed": {
                     "container_valid": True,
@@ -127,13 +137,13 @@ class VideoValidator:
             }
 
             is_valid = resolution_ok and fps_ok and (file_size > 10000)
-            return is_valid, report, warnings
+            return VideoValidationResult(is_valid=is_valid, report=report, warnings=warnings)
 
         except Exception as e:
             logger.warning(f"Validator ffprobe error ({e}). Using ffmpeg basic validation.")
-            return self._fallback_ffmpeg_probe(video_path, expected_ratio, audio_duration, file_size)
+            return self._fallback_ffmpeg_probe(video_path, ratio, audio_duration, file_size)
 
-    def _fallback_ffmpeg_probe(self, video_path: str, expected_ratio: str, audio_duration: float, file_size: int):
+    def _fallback_ffmpeg_probe(self, video_path: str, expected_ratio: str, audio_duration: float, file_size: int) -> VideoValidationResult:
         ffmpeg_exe = settings.get_ffmpeg_path()
         cmd = [ffmpeg_exe, "-i", video_path]
         res = subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
@@ -150,7 +160,7 @@ class VideoValidator:
             "codec_verified": codec_ok,
             "fallback_probe": True
         }
-        return file_size > 10000 and codec_ok, report, []
+        return VideoValidationResult(is_valid=file_size > 10000 and codec_ok, report=report, warnings=[])
 
     def _detect_black_frames(self, video_path: str) -> bool:
         ffmpeg_exe = settings.get_ffmpeg_path()

@@ -1,0 +1,16 @@
+{
+  "job_id": "bench_1795366208",
+  "total_scenes": 3,
+  "aspect_ratios": [
+    "16:9",
+    "9:16",
+    "1:1"
+  ],
+  "full_render_time_seconds": 30.705,
+  "incremental_rerender_time_seconds": 20.859,
+  "time_saved_seconds": 9.846,
+  "speedup_percentage": 32.1,
+  "speedup_factor": "1.47x",
+  "timestamp": "2026-11-22T16:51:00Z",
+  "conclusion": "Incremental clip replacement saved 9.85s (32.1% faster than full render)."
+}
