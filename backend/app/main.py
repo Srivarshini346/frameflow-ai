@@ -1,8 +1,15 @@
+import sys
 import time
 import json
 import uuid
 from pathlib import Path
 from contextlib import asynccontextmanager
+
+# Ensure backend directory is in sys.path when executed directly from repository root
+_backend_dir = Path(__file__).resolve().parent.parent
+if str(_backend_dir) not in sys.path:
+    sys.path.insert(0, str(_backend_dir))
+
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -139,4 +146,4 @@ if frontend_dist.exists():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app.main:app", host=settings.host, port=settings.port, reload=True)
+    uvicorn.run("app.main:app", host=settings.host, port=settings.port, reload=True, app_dir=str(_backend_dir))
