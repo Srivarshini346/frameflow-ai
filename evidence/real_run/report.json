@@ -1,0 +1,419 @@
+{
+  "execution_timestamp": "2026-11-23 14:10:52 UTC",
+  "active_provider": "Pexels",
+  "cold_start_turnaround_seconds": 133.99,
+  "warm_avg_turnaround_seconds": 72.09,
+  "overall_avg_turnaround_seconds": 87.57,
+  "total_suite_duration_seconds": 756.62,
+  "overall_coverage": 1.0,
+  "overall_repeat_clip_rate": 0.0,
+  "scenarios_executed": 4,
+  "scenarios": [
+    {
+      "job_id": "real_1795442295_1",
+      "name": "Coffee Lifestyle",
+      "category": "Food & Beverage",
+      "is_cold": true,
+      "turnaround_seconds": 133.99,
+      "total_scenes": 6,
+      "coverage": 1.0,
+      "duplicate_count": 0,
+      "repeat_clip_rate": 0.0,
+      "validations": {
+        "16:9": {
+          "valid": true,
+          "dimensions": "0x0",
+          "fps": 0.0,
+          "duration": 0.0,
+          "video_codec": null,
+          "audio_codec": null,
+          "has_video": true,
+          "has_audio": false,
+          "aspect_ratio_match": true,
+          "black_frames_detected": false,
+          "frozen_frames_detected": false,
+          "warnings": []
+        },
+        "9:16": {
+          "valid": true,
+          "dimensions": "0x0",
+          "fps": 0.0,
+          "duration": 0.0,
+          "video_codec": null,
+          "audio_codec": null,
+          "has_video": true,
+          "has_audio": false,
+          "aspect_ratio_match": true,
+          "black_frames_detected": false,
+          "frozen_frames_detected": false,
+          "warnings": []
+        },
+        "1:1": {
+          "valid": true,
+          "dimensions": "0x0",
+          "fps": 0.0,
+          "duration": 0.0,
+          "video_codec": null,
+          "audio_codec": null,
+          "has_video": true,
+          "has_audio": false,
+          "aspect_ratio_match": true,
+          "black_frames_detected": false,
+          "frozen_frames_detected": false,
+          "warnings": []
+        }
+      },
+      "scenes": [
+        {
+          "scene_number": 1,
+          "narration": "Coffee from bean to cup begins in mist-covered mountain highlands.",
+          "search_query": "coffee brewing steam",
+          "provider": "Pixabay",
+          "clip_id": "pixabay_3158",
+          "relevance_score": 0.529,
+          "clip_rating": 3,
+          "licence": "Pixabay Content License (Commercial Use Allowed, Attribution Appreciated)",
+          "attribution": "Video by Life-Of-Vids from Pixabay"
+        },
+        {
+          "scene_number": 2,
+          "narration": "Farmers hand-pick only the ripest red cherries with precision.",
+          "search_query": "farmers hand pick",
+          "provider": "Pixabay",
+          "clip_id": "pixabay_73847",
+          "relevance_score": 0.76,
+          "clip_rating": 4,
+          "licence": "Pixabay Content License (Commercial Use Allowed, Attribution Appreciated)",
+          "attribution": "Video by JustY\u00f8u from Pixabay"
+        },
+        {
+          "scene_number": 3,
+          "narration": "Inside the roasting drum, intense heat creates the golden brown crackle.",
+          "search_query": "inside roasting drum",
+          "provider": "Pixabay",
+          "clip_id": "pixabay_37006",
+          "relevance_score": 0.76,
+          "clip_rating": 4,
+          "licence": "Pixabay Content License (Commercial Use Allowed, Attribution Appreciated)",
+          "attribution": "Video by Conserjedeluniverso from Pixabay"
+        },
+        {
+          "scene_number": 4,
+          "narration": "Grinding freshly roasted beans releases an unmistakable rich aroma.",
+          "search_query": "grinding freshly roasted",
+          "provider": "Pixabay",
+          "clip_id": "pixabay_128186",
+          "relevance_score": 0.815,
+          "clip_rating": 5,
+          "licence": "Pixabay Content License (Commercial Use Allowed, Attribution Appreciated)",
+          "attribution": "Video by MRubs from Pixabay"
+        },
+        {
+          "scene_number": 5,
+          "narration": "High pressure extraction pulls dark espresso into a glass cup.",
+          "search_query": "high pressure extraction",
+          "provider": "Pixabay",
+          "clip_id": "pixabay_2333",
+          "relevance_score": 0.718,
+          "clip_rating": 4,
+          "licence": "Pixabay Content License (Commercial Use Allowed, Attribution Appreciated)",
+          "attribution": "Video by Life-Of-Vids from Pixabay"
+        },
+        {
+          "scene_number": 6,
+          "narration": "Morning steam rises as the rich crema settles to perfection.",
+          "search_query": "morning steam rises",
+          "provider": "Pixabay",
+          "clip_id": "pixabay_4947",
+          "relevance_score": 0.7,
+          "clip_rating": 4,
+          "licence": "Pixabay Content License (Commercial Use Allowed, Attribution Appreciated)",
+          "attribution": "Video by klimkin from Pixabay"
+        }
+      ],
+      "warnings": [],
+      "result_urls": {
+        "16:9": "http://localhost:8000/storage/jobs/real_1795442295_1/video_16_9.mp4",
+        "9:16": "http://localhost:8000/storage/jobs/real_1795442295_1/video_9_16.mp4",
+        "1:1": "http://localhost:8000/storage/jobs/real_1795442295_1/video_1_1.mp4"
+      }
+    },
+    {
+      "job_id": "real_1795442430_2",
+      "name": "Savings & Central Bank",
+      "category": "Homonym Disambiguation (Bank/Savings)",
+      "is_cold": false,
+      "turnaround_seconds": 48.91,
+      "total_scenes": 2,
+      "coverage": 1.0,
+      "duplicate_count": 0,
+      "repeat_clip_rate": 0.0,
+      "validations": {
+        "16:9": {
+          "valid": true,
+          "dimensions": "0x0",
+          "fps": 0.0,
+          "duration": 0.0,
+          "video_codec": null,
+          "audio_codec": null,
+          "has_video": true,
+          "has_audio": false,
+          "aspect_ratio_match": true,
+          "black_frames_detected": false,
+          "frozen_frames_detected": false,
+          "warnings": []
+        },
+        "9:16": {
+          "valid": true,
+          "dimensions": "0x0",
+          "fps": 0.0,
+          "duration": 0.0,
+          "video_codec": null,
+          "audio_codec": null,
+          "has_video": true,
+          "has_audio": false,
+          "aspect_ratio_match": true,
+          "black_frames_detected": false,
+          "frozen_frames_detected": false,
+          "warnings": []
+        },
+        "1:1": {
+          "valid": true,
+          "dimensions": "0x0",
+          "fps": 0.0,
+          "duration": 0.0,
+          "video_codec": null,
+          "audio_codec": null,
+          "has_video": true,
+          "has_audio": false,
+          "aspect_ratio_match": true,
+          "black_frames_detected": false,
+          "frozen_frames_detected": false,
+          "warnings": []
+        }
+      },
+      "scenes": [
+        {
+          "scene_number": 1,
+          "narration": "The central bank lowered interest rates to stimulate business lending and consumer savings.",
+          "search_query": "financial corporate banking",
+          "provider": "Pixabay",
+          "clip_id": "pixabay_198755",
+          "relevance_score": 0.571,
+          "clip_rating": 3,
+          "licence": "Pixabay Content License (Commercial Use Allowed, Attribution Appreciated)",
+          "attribution": "Video by olenchic from Pixabay"
+        },
+        {
+          "scene_number": 2,
+          "narration": "Financial markets rallied as institutional investors transferred capital into modern commercial portfolios.",
+          "search_query": "financial markets rallied",
+          "provider": "Pixabay",
+          "clip_id": "pixabay_5438",
+          "relevance_score": 0.593,
+          "clip_rating": 3,
+          "licence": "Pixabay Content License (Commercial Use Allowed, Attribution Appreciated)",
+          "attribution": "Video by tommyvideo from Pixabay"
+        }
+      ],
+      "warnings": [],
+      "result_urls": {
+        "16:9": "http://localhost:8000/storage/jobs/real_1795442430_2/video_16_9.mp4",
+        "9:16": "http://localhost:8000/storage/jobs/real_1795442430_2/video_9_16.mp4",
+        "1:1": "http://localhost:8000/storage/jobs/real_1795442430_2/video_1_1.mp4"
+      }
+    },
+    {
+      "job_id": "real_1795442884_4",
+      "name": "Named Entity & Flood Safety",
+      "category": "Safety Guardrails (Elon Musk/Apple & Disaster)",
+      "is_cold": false,
+      "turnaround_seconds": 74.4,
+      "total_scenes": 2,
+      "coverage": 1.0,
+      "duplicate_count": 0,
+      "repeat_clip_rate": 0.0,
+      "validations": {
+        "16:9": {
+          "valid": true,
+          "dimensions": "0x0",
+          "fps": 0.0,
+          "duration": 0.0,
+          "video_codec": null,
+          "audio_codec": null,
+          "has_video": true,
+          "has_audio": false,
+          "aspect_ratio_match": true,
+          "black_frames_detected": false,
+          "frozen_frames_detected": false,
+          "warnings": []
+        },
+        "9:16": {
+          "valid": true,
+          "dimensions": "0x0",
+          "fps": 0.0,
+          "duration": 0.0,
+          "video_codec": null,
+          "audio_codec": null,
+          "has_video": true,
+          "has_audio": false,
+          "aspect_ratio_match": true,
+          "black_frames_detected": false,
+          "frozen_frames_detected": false,
+          "warnings": []
+        },
+        "1:1": {
+          "valid": true,
+          "dimensions": "0x0",
+          "fps": 0.0,
+          "duration": 0.0,
+          "video_codec": null,
+          "audio_codec": null,
+          "has_video": true,
+          "has_audio": false,
+          "aspect_ratio_match": true,
+          "black_frames_detected": false,
+          "frozen_frames_detected": false,
+          "warnings": []
+        }
+      },
+      "scenes": [
+        {
+          "scene_number": 1,
+          "narration": "Elon Musk announced that Tesla and Apple teams are collaborating with emergency disaster response units.",
+          "search_query": "elon musk announced",
+          "provider": "Pixabay",
+          "clip_id": "pixabay_1297",
+          "relevance_score": 0.684,
+          "clip_rating": 4,
+          "licence": "Pixabay Content License (Commercial Use Allowed, Attribution Appreciated)",
+          "attribution": "Video by kaigraphick from Pixabay"
+        },
+        {
+          "scene_number": 2,
+          "narration": "Severe flood waters inundated residential streets as emergency rescue workers deployed lifeboats.",
+          "search_query": "severe flood waters",
+          "provider": "Pixabay",
+          "clip_id": "pixabay_14324",
+          "relevance_score": 0.718,
+          "clip_rating": 4,
+          "licence": "Pixabay Content License (Commercial Use Allowed, Attribution Appreciated)",
+          "attribution": "Video by silas267 from Pixabay"
+        }
+      ],
+      "warnings": [],
+      "result_urls": {
+        "16:9": "http://localhost:8000/storage/jobs/real_1795442884_4/video_16_9.mp4",
+        "9:16": "http://localhost:8000/storage/jobs/real_1795442884_4/video_9_16.mp4",
+        "1:1": "http://localhost:8000/storage/jobs/real_1795442884_4/video_1_1.mp4"
+      }
+    },
+    {
+      "job_id": "real_1795442959_5",
+      "name": "GreenLoop Smart Garden",
+      "category": "Product Commercial",
+      "is_cold": false,
+      "turnaround_seconds": 92.97,
+      "total_scenes": 4,
+      "coverage": 1.0,
+      "duplicate_count": 0,
+      "repeat_clip_rate": 0.0,
+      "validations": {
+        "16:9": {
+          "valid": true,
+          "dimensions": "0x0",
+          "fps": 0.0,
+          "duration": 0.0,
+          "video_codec": null,
+          "audio_codec": null,
+          "has_video": true,
+          "has_audio": false,
+          "aspect_ratio_match": true,
+          "black_frames_detected": false,
+          "frozen_frames_detected": false,
+          "warnings": []
+        },
+        "9:16": {
+          "valid": true,
+          "dimensions": "0x0",
+          "fps": 0.0,
+          "duration": 0.0,
+          "video_codec": null,
+          "audio_codec": null,
+          "has_video": true,
+          "has_audio": false,
+          "aspect_ratio_match": true,
+          "black_frames_detected": false,
+          "frozen_frames_detected": false,
+          "warnings": []
+        },
+        "1:1": {
+          "valid": true,
+          "dimensions": "0x0",
+          "fps": 0.0,
+          "duration": 0.0,
+          "video_codec": null,
+          "audio_codec": null,
+          "has_video": true,
+          "has_audio": false,
+          "aspect_ratio_match": true,
+          "black_frames_detected": false,
+          "frozen_frames_detected": false,
+          "warnings": []
+        }
+      },
+      "scenes": [
+        {
+          "scene_number": 1,
+          "narration": "Meet GreenLoop: Your Smart Home Garden.",
+          "search_query": "meet greenloop your",
+          "provider": "Pixabay",
+          "clip_id": "pixabay_76005",
+          "relevance_score": 0.815,
+          "clip_rating": 5,
+          "licence": "Pixabay Content License (Commercial Use Allowed, Attribution Appreciated)",
+          "attribution": "Video by patw64 from Pixabay"
+        },
+        {
+          "scene_number": 2,
+          "narration": "Imagine coming home after a long day and finding fresh herbs growing right in your kitchen.",
+          "search_query": "imagine coming home",
+          "provider": "Pixabay",
+          "clip_id": "pixabay_1027",
+          "relevance_score": 0.616,
+          "clip_rating": 3,
+          "licence": "Pixabay Content License (Commercial Use Allowed, Attribution Appreciated)",
+          "attribution": "Video by Coverr-Free-Footage from Pixabay"
+        },
+        {
+          "scene_number": 3,
+          "narration": "No soil on the floor, no guessing when to water, just crisp organic basil and mint all year long.",
+          "search_query": "soil floor guessing",
+          "provider": "Pixabay",
+          "clip_id": "pixabay_134115",
+          "relevance_score": 0.7,
+          "clip_rating": 4,
+          "licence": "Pixabay Content License (Commercial Use Allowed, Attribution Appreciated)",
+          "attribution": "Video by zillurrahman1 from Pixabay"
+        },
+        {
+          "scene_number": 4,
+          "narration": "GreenLoop automated LED grow lights and hydroponic watering do the work while you live your life.",
+          "search_query": "greenloop automated led",
+          "provider": "Pixabay",
+          "clip_id": "pixabay_33093",
+          "relevance_score": 0.67,
+          "clip_rating": 4,
+          "licence": "Pixabay Content License (Commercial Use Allowed, Attribution Appreciated)",
+          "attribution": "Video by computergottyt from Pixabay"
+        }
+      ],
+      "warnings": [],
+      "result_urls": {
+        "16:9": "http://localhost:8000/storage/jobs/real_1795442959_5/video_16_9.mp4",
+        "9:16": "http://localhost:8000/storage/jobs/real_1795442959_5/video_9_16.mp4",
+        "1:1": "http://localhost:8000/storage/jobs/real_1795442959_5/video_1_1.mp4"
+      }
+    }
+  ]
+}
