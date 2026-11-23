@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: FrameFlow AI – Intelligent B-roll Studio
+  title: "FrameFlow AI \u2013 Intelligent B-roll Studio"
   description: Intelligent AI Script and Voiceover to B-roll Video Engine (IncuBrix
     PS3)
   version: 1.1.0
@@ -270,6 +270,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/providers:
+    get:
+      tags:
+      - Analytics & Providers
+      summary: Get Providers
+      operationId: get_providers_api_v1_providers_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
   /api/v1/analytics:
     get:
       tags:

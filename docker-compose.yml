@@ -26,12 +26,46 @@ services:
       - RELEVANCE_SCORER=${RELEVANCE_SCORER:-clip}
     depends_on:
       - minio
+      - postgres
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 15s
       timeout: 5s
       retries: 3
+
+  # Background Asynchronous Worker
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: frameflow-worker
+    command: ["python", "-m", "app.main"]
+    volumes:
+      - ./storage:/app/storage
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8001
+      - STORAGE_DIR=/app/storage
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/frameflow
+    depends_on:
+      - postgres
+      - minio
+    restart: unless-stopped
+
+  # PostgreSQL Database Service
+  postgres:
+    image: postgres:15-alpine
+    container_name: frameflow-postgres
+    environment:
+      POSTGRES_DB: frameflow
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./storage/postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
 
   # MinIO S3-Compatible Local Object Storage
   minio:

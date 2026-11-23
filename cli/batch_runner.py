@@ -22,8 +22,27 @@ async def run_batch(input_file: str, output_dir: str, api_url: Optional[str] = N
         print(f"Targeting Engine:    Local In-Process JobManager")
     print(f"Output Directory:    {output_dir}")
 
-    with open(input_file, "r", encoding="utf-8") as f:
-        scripts_data = json.load(f)
+    # Load from file or folder
+    inp_p = Path(input_file)
+    scripts_data = []
+    if inp_p.is_dir():
+        for p in inp_p.glob("*.txt"):
+            text = p.read_text(encoding="utf-8").strip()
+            if text:
+                scripts_data.append({"id": p.stem, "title": p.stem, "script": text, "language": "en"})
+        for p in inp_p.glob("*.json"):
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    content = json.load(f)
+                    if isinstance(content, list):
+                        scripts_data.extend(content)
+                    elif isinstance(content, dict):
+                        scripts_data.append(content)
+            except Exception:
+                pass
+    else:
+        with open(input_file, "r", encoding="utf-8") as f:
+            scripts_data = json.load(f)
 
     out_path = Path(output_dir)
     out_path.mkdir(parents=True, exist_ok=True)
@@ -147,15 +166,16 @@ async def run_batch(input_file: str, output_dir: str, api_url: Optional[str] = N
         })
 
     # Save summary CSV
-    csv_file = out_path / "batch_summary.csv"
-    fieldnames = [
-        "script_id", "title", "status", "job_id", "duration_seconds",
-        "processing_time_s", "relevance_score", "video_urls"
-    ]
-    with open(csv_file, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(results_summary)
+    for filename in ("summary.csv", "batch_summary.csv"):
+        csv_file = out_path / filename
+        fieldnames = [
+            "script_id", "title", "status", "job_id", "duration_seconds",
+            "processing_time_s", "relevance_score", "video_urls"
+        ]
+        with open(csv_file, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(results_summary)
 
     # Save summary JSON
     json_file = out_path / "batch_summary.json"

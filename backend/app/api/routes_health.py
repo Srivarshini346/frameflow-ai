@@ -46,5 +46,70 @@ def health_check():
     )
 
 @router.get("/ready")
-def readiness_check():
-    return {"ready": True, "app": settings.app_name, "version": settings.version}
+async def readiness_check():
+    checks = {}
+    failing = []
+
+    # 1. FFmpeg
+    ffmpeg_exe = settings.get_ffmpeg_path()
+    try:
+        res = subprocess.run([ffmpeg_exe, "-version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=4)
+        if res.returncode == 0:
+            checks["ffmpeg"] = {"ok": True, "message": "FFmpeg binary operational"}
+        else:
+            checks["ffmpeg"] = {"ok": False, "message": f"FFmpeg returned exit code {res.returncode}"}
+            failing.append("ffmpeg")
+    except Exception as e:
+        checks["ffmpeg"] = {"ok": False, "message": f"FFmpeg execution failed: {str(e)[:50]}"}
+        failing.append("ffmpeg")
+
+    # 2. Storage
+    try:
+        settings.storage_dir.mkdir(parents=True, exist_ok=True)
+        t_file = settings.storage_dir / ".ready_check"
+        t_file.write_text("ok")
+        t_file.unlink()
+        checks["storage"] = {"ok": True, "message": "Storage directory writable"}
+    except Exception as e:
+        checks["storage"] = {"ok": False, "message": f"Storage not writable: {str(e)[:50]}"}
+        failing.append("storage")
+
+    # 3. Database
+    try:
+        import sqlite3
+        db_path = settings.storage_dir / "frameflow.db"
+        with sqlite3.connect(db_path) as conn:
+            conn.execute("SELECT 1")
+        checks["database"] = {"ok": True, "message": "Database operational"}
+    except Exception as e:
+        checks["database"] = {"ok": False, "message": f"Database error: {str(e)[:50]}"}
+        failing.append("database")
+
+    # 4. Enabled providers
+    active_providers = []
+    try:
+        from app.services.footage_service import footage_service
+        for p in footage_service.providers:
+            if "mock" in p.name.lower():
+                active_providers.append("mock_synthetic")
+            elif p.is_available:
+                active_providers.append(p.name.lower())
+    except Exception:
+        active_providers.append("mock")
+
+    checks["providers"] = {
+        "ok": len(active_providers) > 0,
+        "message": f"Active footage sources: {', '.join(active_providers)}"
+    }
+    if not active_providers:
+        failing.append("providers")
+
+    is_ready = len(failing) == 0
+    return {
+        "ready": is_ready,
+        "status": "ready" if is_ready else "degraded",
+        "app": settings.app_name,
+        "version": settings.version,
+        "checks": checks,
+        "failing_checks": failing
+    }

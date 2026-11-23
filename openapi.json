@@ -3,7 +3,7 @@
   "info": {
     "title": "FrameFlow AI \u2013 Intelligent B-roll Studio",
     "description": "Intelligent AI Script and Voiceover to B-roll Video Engine (IncuBrix PS3)",
-    "version": "1.0.0"
+    "version": "1.1.0"
   },
   "paths": {
     "/health": {
@@ -93,6 +93,82 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/BrollJobCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobDetailResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/broll/jobs/upload": {
+      "post": {
+        "tags": [
+          "B-roll Jobs"
+        ],
+        "summary": "Create Broll Job With Audio File",
+        "description": "Multipart audio file upload endpoint (MP3, WAV, M4A).",
+        "operationId": "create_broll_job_with_audio_file_api_v1_broll_jobs_upload_post",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "X-Correlation-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Correlation-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_create_broll_job_with_audio_file_api_v1_broll_jobs_upload_post"
               }
             }
           }
@@ -314,6 +390,76 @@
         }
       }
     },
+    "/api/v1/jobs/{job_id}/rate": {
+      "post": {
+        "tags": [
+          "B-roll Jobs"
+        ],
+        "summary": "Rate Job Quality",
+        "description": "Saves human quality rating and feedback to /storage/ratings/<job_id>.json.",
+        "operationId": "rate_job_quality_api_v1_jobs__job_id__rate_post",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobRatingPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/providers": {
+      "get": {
+        "tags": [
+          "Analytics & Providers"
+        ],
+        "summary": "Get Providers",
+        "operationId": "get_providers_api_v1_providers_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/analytics": {
       "get": {
         "tags": [
@@ -384,9 +530,79 @@
         ],
         "title": "AspectRatio"
       },
+      "Body_create_broll_job_with_audio_file_api_v1_broll_jobs_upload_post": {
+        "properties": {
+          "audio_file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "Audio File"
+          },
+          "script": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Script"
+          },
+          "aspect_ratios": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aspect Ratios"
+          },
+          "style": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Style",
+            "default": "cinematic"
+          },
+          "avoid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avoid"
+          },
+          "callback_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Callback Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "audio_file"
+        ],
+        "title": "Body_create_broll_job_with_audio_file_api_v1_broll_jobs_upload_post"
+      },
       "BrollJobCreateRequest": {
         "properties": {
-          "script_text": {
+          "script": {
             "anyOf": [
               {
                 "type": "string"
@@ -395,43 +611,7 @@
                 "type": "null"
               }
             ],
-            "title": "Script Text",
-            "description": "Plain text narration script"
-          },
-          "audio_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Audio Url",
-            "description": "Direct URL to pre-recorded audio file"
-          },
-          "audio_base64": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Audio Base64",
-            "description": "Base64-encoded audio bytes (MP3, WAV, M4A)"
-          },
-          "audio_filename": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Audio Filename"
+            "title": "Script"
           },
           "scenes": {
             "anyOf": [
@@ -445,10 +625,9 @@
                 "type": "null"
               }
             ],
-            "title": "Scenes",
-            "description": "Explicit manual scenes if not auto-segmenting"
+            "title": "Scenes"
           },
-          "voice_config": {
+          "voice": {
             "$ref": "#/components/schemas/VoiceConfig"
           },
           "aspect_ratios": {
@@ -467,6 +646,92 @@
             "$ref": "#/components/schemas/VisualPromptStyle",
             "default": "cinematic"
           },
+          "avoid": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Avoid"
+          },
+          "captions": {
+            "$ref": "#/components/schemas/CaptionConfig"
+          },
+          "audio_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Url"
+          },
+          "callback_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Callback Url"
+          },
+          "webhook_secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Webhook Secret"
+          },
+          "script_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Script Text"
+          },
+          "audio_base64": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Base64"
+          },
+          "audio_filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Filename"
+          },
+          "voice_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VoiceConfig"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "style_instructions": {
             "anyOf": [
               {
@@ -476,8 +741,7 @@
                 "type": "null"
               }
             ],
-            "title": "Style Instructions",
-            "description": "Global visual mood directions"
+            "title": "Style Instructions"
           },
           "avoid_instructions": {
             "anyOf": [
@@ -491,11 +755,17 @@
                 "type": "null"
               }
             ],
-            "title": "Avoid Instructions",
-            "description": "Visual keywords/concepts to avoid"
+            "title": "Avoid Instructions"
           },
           "caption_config": {
-            "$ref": "#/components/schemas/CaptionConfig"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CaptionConfig"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "webhook_url": {
             "anyOf": [
@@ -507,17 +777,6 @@
               }
             ],
             "title": "Webhook Url"
-          },
-          "webhook_secret": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Webhook Secret"
           }
         },
         "type": "object",
@@ -525,14 +784,14 @@
       },
       "CaptionConfig": {
         "properties": {
-          "enabled": {
+          "burn_in": {
             "type": "boolean",
-            "title": "Enabled",
+            "title": "Burn In",
             "default": true
           },
-          "burned_in": {
+          "srt": {
             "type": "boolean",
-            "title": "Burned In",
+            "title": "Srt",
             "default": true
           },
           "font_size": {
@@ -625,6 +884,11 @@
             "title": "Is Ai Generated",
             "default": false
           },
+          "watermark": {
+            "type": "boolean",
+            "title": "Watermark",
+            "default": false
+          },
           "tags": {
             "items": {
               "type": "string"
@@ -690,9 +954,38 @@
             "type": "boolean",
             "title": "Storage Writable"
           },
+          "database_connected": {
+            "type": "boolean",
+            "title": "Database Connected",
+            "default": true
+          },
           "active_jobs": {
             "type": "integer",
-            "title": "Active Jobs"
+            "title": "Active Jobs",
+            "default": 0
+          },
+          "details": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
+          },
+          "providers_summary": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Providers Summary"
           }
         },
         "type": "object",
@@ -700,8 +993,7 @@
           "status",
           "version",
           "ffmpeg_available",
-          "storage_writable",
-          "active_jobs"
+          "storage_writable"
         ],
         "title": "HealthStatus"
       },
@@ -775,6 +1067,39 @@
           "updated_at"
         ],
         "title": "JobDetailResponse"
+      },
+      "JobRatingPayload": {
+        "properties": {
+          "ratings": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Ratings"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "overall_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overall Score"
+          }
+        },
+        "type": "object",
+        "title": "JobRatingPayload"
       },
       "JobResultResponse": {
         "properties": {
@@ -910,10 +1235,50 @@
               }
             ]
           },
-          "ai_generated": {
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "default": "mock"
+          },
+          "clip_id": {
+            "type": "string",
+            "title": "Clip Id",
+            "default": ""
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url",
+            "default": ""
+          },
+          "licence": {
+            "type": "string",
+            "title": "Licence",
+            "default": ""
+          },
+          "attribution": {
+            "type": "string",
+            "title": "Attribution",
+            "default": ""
+          },
+          "is_ai_generated": {
             "type": "boolean",
-            "title": "Ai Generated",
+            "title": "Is Ai Generated",
             "default": false
+          },
+          "watermark": {
+            "type": "boolean",
+            "title": "Watermark",
+            "default": false
+          },
+          "selection_rule": {
+            "type": "string",
+            "title": "Selection Rule",
+            "default": "CLIP image-text cosine similarity ranking"
+          },
+          "selection_reason": {
+            "type": "string",
+            "title": "Selection Reason",
+            "default": ""
           },
           "relevance_score": {
             "type": "number",
@@ -922,21 +1287,30 @@
             "title": "Relevance Score",
             "default": 0.0
           },
-          "vlm_score": {
+          "clip_rating": {
+            "type": "integer",
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Clip Rating",
+            "default": 3
+          },
+          "thumbnail_url": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Vlm Score"
+            "title": "Thumbnail Url"
           },
-          "selection_reason": {
-            "type": "string",
-            "title": "Selection Reason",
-            "default": ""
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
           },
           "status": {
             "type": "string",
@@ -958,11 +1332,12 @@
       },
       "SceneInputRequest": {
         "properties": {
-          "narration_text": {
+          "text": {
             "type": "string",
-            "title": "Narration Text"
+            "title": "Text",
+            "default": ""
           },
-          "custom_visual_description": {
+          "visual_hint": {
             "anyOf": [
               {
                 "type": "string"
@@ -971,7 +1346,7 @@
                 "type": "null"
               }
             ],
-            "title": "Custom Visual Description"
+            "title": "Visual Hint"
           },
           "manual_keywords": {
             "anyOf": [
@@ -989,9 +1364,6 @@
           }
         },
         "type": "object",
-        "required": [
-          "narration_text"
-        ],
         "title": "SceneInputRequest"
       },
       "SceneReplaceRequest": {

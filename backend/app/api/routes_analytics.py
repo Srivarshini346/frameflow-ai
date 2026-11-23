@@ -7,9 +7,24 @@ from fastapi import APIRouter
 from app.config import settings
 from app.services.footage_service import footage_service
 
-router = APIRouter(prefix="/analytics", tags=["Analytics & Providers"])
+router = APIRouter(prefix="", tags=["Analytics & Providers"])
 
-@router.get("")
+@router.get("/providers")
+async def get_providers():
+    providers_info = []
+    for p in footage_service.providers:
+        is_active, status_msg = await p.check_active_status()
+        providers_info.append({
+            "name": p.name,
+            "is_available": p.is_available,
+            "is_active": is_active,
+            "status": status_msg,
+            "type": "api" if "Mock" not in p.name else "synthetic_cc0",
+            "commercial_cleared": True
+        })
+    return {"providers": providers_info}
+
+@router.get("/analytics")
 async def get_analytics():
     providers_info = []
     for p in footage_service.providers:

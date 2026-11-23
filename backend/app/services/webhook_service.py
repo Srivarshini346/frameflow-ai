@@ -26,7 +26,6 @@ class WebhookService:
         headers = {
             "Content-Type": "application/json",
             WEBHOOK_HEADER_NAME: signature,
-            "X-FrameFlow-Signature": signature,
             "User-Agent": "FrameFlow-AI-Webhook/1.1"
         }
 
