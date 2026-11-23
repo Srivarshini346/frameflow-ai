@@ -1,7 +1,7 @@
 import React from 'react';
 import { Video, Layers, Clock, Sliders, Award, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
 
-export default function Navbar({ activeTab, setActiveTab, health }) {
+export default function Navbar({ activeTab, setActiveTab, health, readyStatus }) {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Layers },
     { id: 'create', label: 'Create Studio', icon: Video },
@@ -13,7 +13,10 @@ export default function Navbar({ activeTab, setActiveTab, health }) {
     { id: 'quality', label: 'Quality Report', icon: CheckCircle2 },
   ];
 
-  const isHealthy = health?.status === 'healthy';
+  const isReady = readyStatus ? (readyStatus.status === 'ready' || readyStatus.ready === true) : (health?.status === 'healthy');
+  const failingReasons = readyStatus?.failing_checks?.length
+    ? `Degraded checks: ${readyStatus.failing_checks.join(', ')}`
+    : (health?.status === 'degraded' ? 'System degraded: storage or ffmpeg offline' : '');
 
   return (
     <header style={{
@@ -91,14 +94,17 @@ export default function Navbar({ activeTab, setActiveTab, health }) {
           })}
         </nav>
 
-        {/* System Health Pill with Tooltip */}
+        {/* System Health / Readiness Pill with failing check tooltip on hover */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div
             title={
-              health?.details ||
-              (health?.providers_summary?.pexels_configured || health?.providers_summary?.pixabay_configured
-                ? "All systems operational (Pexels / Pixabay stock footage active)"
-                : "No PEXELS_API_KEY: using gradient fallback. Set keys in .env to enable real stock footage.")
+              !isReady
+                ? (failingReasons || "Readiness check failed (/ready)")
+                : (health?.providers_summary?.pixabay_configured
+                    ? "All systems operational (Pixabay live stock API active)"
+                    : health?.providers_summary?.pexels_configured
+                      ? "All systems operational (Pexels live stock API active)"
+                      : "Engine Online (Procedural Ken Burns Fallback Active)")
             }
             style={{
               display: 'flex',
@@ -106,11 +112,11 @@ export default function Navbar({ activeTab, setActiveTab, health }) {
               gap: '6px',
               padding: '6px 12px',
               borderRadius: 'var(--radius-full)',
-              backgroundColor: isHealthy ? 'var(--accent-mint-light)' : 'var(--accent-coral-light)',
-              color: isHealthy ? 'var(--accent-mint)' : 'var(--accent-coral)',
+              backgroundColor: isReady ? 'var(--accent-mint-light)' : 'var(--accent-coral-light)',
+              color: isReady ? 'var(--accent-mint)' : 'var(--accent-coral)',
               fontSize: '12px',
               fontWeight: 600,
-              border: `1px solid ${isHealthy ? '#BCECDA' : '#FCD0D0'}`,
+              border: `1px solid ${isReady ? '#BCECDA' : '#FCD0D0'}`,
               cursor: 'help'
             }}
           >
@@ -118,14 +124,16 @@ export default function Navbar({ activeTab, setActiveTab, health }) {
               width: '8px',
               height: '8px',
               borderRadius: '50%',
-              backgroundColor: isHealthy ? 'var(--accent-mint)' : 'var(--accent-coral)',
+              backgroundColor: isReady ? 'var(--accent-mint)' : 'var(--accent-coral)',
               display: 'inline-block'
             }} />
             <span>
-              {isHealthy 
-                ? (health?.providers_summary?.pexels_configured || health?.providers_summary?.pixabay_configured
-                    ? 'All systems operational (Pexels active)'
-                    : 'Engine Online (Procedural Fallback)')
+              {isReady 
+                ? (health?.providers_summary?.pixabay_configured
+                    ? 'All systems operational (Pixabay active)'
+                    : health?.providers_summary?.pexels_configured
+                      ? 'All systems operational (Pexels active)'
+                      : 'Engine Online (Procedural Fallback)')
                 : 'Degraded'
               }
             </span>

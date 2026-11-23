@@ -106,7 +106,7 @@ export default function MultiTrackStudio({ currentJob, currentResult, currentJob
   const activeDim = ratioDimensions[selectedRatio] || ratioDimensions['16:9'];
 
   return (
-    <div style={{ backgroundColor: 'var(--bg-main)', minHeight: 'calc(100vh - 70px)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ backgroundColor: 'var(--bg-main)', minHeight: 'calc(100vh - 70px)', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
       {/* Studio Header Sub-bar */}
       <div style={{
         backgroundColor: '#FFFFFF',
@@ -672,12 +672,15 @@ export default function MultiTrackStudio({ currentJob, currentResult, currentJob
         </div>
       </div>
 
-      {/* Bottom Multi-Track Timeline (Inspired by Image 1) */}
+      {/* Bottom Multi-Track Timeline */}
       <div style={{
         backgroundColor: '#FFFFFF',
         borderTop: '1px solid var(--border-light)',
-        padding: '12px 24px 20px',
-        boxShadow: '0 -2px 10px rgba(0,0,0,0.03)'
+        padding: '14px 24px 36px',
+        boxShadow: '0 -2px 10px rgba(0,0,0,0.03)',
+        flexShrink: 0,
+        overflowX: 'auto',
+        minHeight: '200px'
       }}>
         {/* Timeline Header Bar */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>

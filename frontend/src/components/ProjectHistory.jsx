@@ -5,6 +5,7 @@ import { listRecentJobs, getJobResult } from '../api/client';
 export default function ProjectHistory({ setActiveTab, setCurrentJobId, setCurrentResult }) {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     loadJobs();
@@ -12,11 +13,14 @@ export default function ProjectHistory({ setActiveTab, setCurrentJobId, setCurre
 
   const loadJobs = async () => {
     setLoading(true);
+    setError(null);
     try {
       const data = await listRecentJobs();
-      setJobs(data);
+      setJobs(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error(e);
+      setError(e.message || "Failed to load project history archive");
+      setJobs([]);
     } finally {
       setLoading(false);
     }
@@ -34,7 +38,7 @@ export default function ProjectHistory({ setActiveTab, setCurrentJobId, setCurre
   };
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '36px 24px' }} className="animate-fade">
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '36px 24px', width: '100%', boxSizing: 'border-box' }} className="animate-fade">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px' }}>
         <div>
           <h1 style={{ fontSize: '26px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '6px' }}>
@@ -59,6 +63,34 @@ export default function ProjectHistory({ setActiveTab, setCurrentJobId, setCurre
           New Project
         </button>
       </div>
+
+      {error && (
+        <div style={{
+          backgroundColor: 'var(--accent-coral-light)',
+          color: 'var(--accent-coral)',
+          padding: '14px 20px',
+          borderRadius: 'var(--radius-md)',
+          marginBottom: '20px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <span>{error}</span>
+          <button
+            onClick={loadJobs}
+            style={{
+              backgroundColor: 'var(--accent-coral)',
+              color: '#FFFFFF',
+              padding: '6px 14px',
+              borderRadius: 'var(--radius-sm)',
+              fontWeight: 700,
+              fontSize: '12px'
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>

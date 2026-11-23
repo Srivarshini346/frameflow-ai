@@ -10,30 +10,41 @@ import ProjectHistory from './components/ProjectHistory.jsx';
 import AnalyticsLicenceHub from './components/AnalyticsLicenceHub.jsx';
 import QualityEvaluationReport from './components/QualityEvaluationReport.jsx';
 
-import { getHealthStatus, listRecentJobs, getJobResult, getJobStatus } from './api/client.js';
+import { getHealthStatus, getReadyStatus, listRecentJobs, getJobResult, getJobStatus } from './api/client.js';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [health, setHealth] = useState(null);
+  const [readyStatus, setReadyStatus] = useState(null);
   const [jobs, setJobs] = useState([]);
   
   // Active workflow state
-  const [currentJobId, setCurrentJobId] = useState(null);
+  const [currentJobId, setCurrentJobId] = useState(() => localStorage.getItem('frameflow_active_job'));
   const [currentJob, setCurrentJob] = useState(null);
   const [currentResult, setCurrentResult] = useState(null);
   const [scriptPreset, setScriptPreset] = useState(null);
 
   useEffect(() => {
-    // Initial health and jobs fetch
-    getHealthStatus().then(setHealth).catch(console.error);
+    // Initial health, readiness, and jobs fetch
+    const pollStatus = () => {
+      getHealthStatus().then(setHealth).catch(console.error);
+      getReadyStatus().then(setReadyStatus).catch(console.error);
+    };
+    pollStatus();
     refreshJobs();
 
-    const interval = setInterval(() => {
-      getHealthStatus().then(setHealth).catch(console.error);
-    }, 10000);
-
+    const interval = setInterval(pollStatus, 10000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (currentJobId) {
+      localStorage.setItem('frameflow_active_job', currentJobId);
+      if (!currentJob) {
+        loadResultForJob(currentJobId);
+      }
+    }
+  }, [currentJobId]);
 
   const refreshJobs = async () => {
     try {
@@ -54,6 +65,7 @@ export default function App() {
   const loadResultForJob = async (jobId) => {
     try {
       setCurrentJobId(jobId);
+      localStorage.setItem('frameflow_active_job', jobId);
       const jobData = await getJobStatus(jobId);
       setCurrentJob(jobData);
       if (jobData.status === 'succeeded') {
@@ -67,7 +79,7 @@ export default function App() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} health={health} />
+      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} health={health} readyStatus={readyStatus} />
 
       <main style={{ flex: 1, paddingBottom: '60px' }}>
         {activeTab === 'dashboard' && (

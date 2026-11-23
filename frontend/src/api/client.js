@@ -66,10 +66,26 @@ export async function getAnalytics() {
   return res.json();
 }
 
+export async function getProviders() {
+  const res = await fetch(`${API_BASE}/providers`);
+  if (!res.ok) {
+    return { providers: [] };
+  }
+  return res.json();
+}
+
 export async function getHealthStatus() {
   const res = await fetch('/health');
   if (!res.ok) {
     return { status: 'down' };
+  }
+  return res.json();
+}
+
+export async function getReadyStatus() {
+  const res = await fetch('/ready');
+  if (!res.ok) {
+    return { ready: false, status: 'degraded', failing_checks: ['backend_offline'] };
   }
   return res.json();
 }

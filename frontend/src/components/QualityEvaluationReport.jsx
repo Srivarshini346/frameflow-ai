@@ -1,15 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Star, Award, CheckCircle2, BarChart2, ShieldCheck, AlertCircle, FileText, Send, Sparkles } from 'lucide-react';
-import { rateJob } from '../api/client';
+import { rateJob, getJobStatus } from '../api/client';
 
 export default function QualityEvaluationReport({ currentJob, currentResult }) {
+  const [localJob, setLocalJob] = useState(null);
   const [ratings, setRatings] = useState({});
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
 
-  const scenes = currentJob?.scenes || [];
-  const jobId = currentJob?.job_id;
+  useEffect(() => {
+    if (!currentJob) {
+      const savedId = localStorage.getItem('frameflow_active_job');
+      if (savedId) {
+        getJobStatus(savedId).then(setLocalJob).catch(console.error);
+      }
+    }
+  }, [currentJob]);
+
+  const activeJob = currentJob || localJob;
+  const scenes = activeJob?.scenes || [];
+  const jobId = activeJob?.job_id;
 
   // Empty state if no job run yet
   if (!scenes || scenes.length === 0) {
@@ -92,7 +103,7 @@ export default function QualityEvaluationReport({ currentJob, currentResult }) {
   };
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '36px 24px' }} className="animate-fade">
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '36px 24px', width: '100%', boxSizing: 'border-box' }} className="animate-fade">
       <div style={{ marginBottom: '28px' }}>
         <h1 style={{ fontSize: '26px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '6px' }}>
           Quality Evaluation & Human-in-the-Loop Rating

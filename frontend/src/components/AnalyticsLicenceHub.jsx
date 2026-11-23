@@ -1,16 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { ShieldCheck, Cpu, Database, CheckCircle2, Award, FileText, Server, Lock } from 'lucide-react';
-import { getAnalytics } from '../api/client';
+import { getAnalytics, getProviders } from '../api/client';
 
 export default function AnalyticsLicenceHub() {
   const [analytics, setAnalytics] = useState(null);
+  const [providers, setProviders] = useState([]);
 
   useEffect(() => {
     getAnalytics().then(setAnalytics).catch(console.error);
+    getProviders().then(data => setProviders(data.providers || [])).catch(console.error);
   }, []);
 
+  const getProviderStatus = (name) => {
+    const p = providers.find(item => item.name.toLowerCase() === name.toLowerCase()) ||
+              analytics?.providers?.find(item => item.name.toLowerCase() === name.toLowerCase());
+    if (!p) return 'Checking...';
+    if (p.is_active || p.status === 'Active') return 'Active';
+    return p.status || (p.is_available ? 'Active' : 'No key configured');
+  };
+
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '36px 24px' }} className="animate-fade">
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '36px 24px', width: '100%', boxSizing: 'border-box' }} className="animate-fade">
       <div style={{ marginBottom: '28px' }}>
         <h1 style={{ fontSize: '26px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '6px' }}>
           Architecture, Analytics & Licence Governance
@@ -20,7 +30,7 @@ export default function AnalyticsLicenceHub() {
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '28px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '28px' }}>
         {/* Modular Providers Status */}
         <div style={{
           backgroundColor: 'var(--bg-card)',
@@ -39,15 +49,13 @@ export default function AnalyticsLicenceHub() {
                 name: 'Pexels Video API Adapter',
                 type: 'REST API Adapter (1080p stream preference, landscape/portrait)',
                 licence: 'Pexels Commercial License (No attribution required)',
-                status: analytics?.providers?.find(p => p.name === 'Pexels')?.status || 
-                  (analytics?.providers?.find(p => p.name === 'Pexels')?.is_available ? 'Active' : 'No key configured')
+                status: getProviderStatus('Pexels')
               },
               {
                 name: 'Pixabay Video API Adapter',
                 type: 'REST API Adapter (Large MP4 stream preference)',
                 licence: 'Pixabay Content License (Commercial use cleared)',
-                status: analytics?.providers?.find(p => p.name === 'Pixabay')?.status || 
-                  (analytics?.providers?.find(p => p.name === 'Pixabay')?.is_available ? 'Active' : 'No key configured')
+                status: getProviderStatus('Pixabay')
               },
               {
                 name: 'Synthetic Mock Footage Engine',

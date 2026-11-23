@@ -33,7 +33,7 @@ export default function Dashboard({ setActiveTab, setScriptPreset, jobs }) {
   ];
 
   return (
-    <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '36px 24px' }} className="animate-fade">
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '36px 24px', width: '100%', boxSizing: 'border-box' }} className="animate-fade">
       {/* Hero Welcome Banner */}
       <div style={{
         backgroundColor: 'var(--bg-card)',
@@ -95,7 +95,7 @@ export default function Dashboard({ setActiveTab, setScriptPreset, jobs }) {
       </div>
 
       {/* Metrics Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '36px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '36px', width: '100%' }}>
         {[
           { label: 'Total Projects', val: jobs.length, icon: Film, color: 'var(--primary)', bg: 'var(--primary-light)' },
           { label: 'Completed Videos', val: completedCount, icon: CheckCircle2, color: 'var(--accent-mint)', bg: 'var(--accent-mint-light)' },
@@ -112,7 +112,9 @@ export default function Dashboard({ setActiveTab, setScriptPreset, jobs }) {
               boxShadow: 'var(--shadow-sm)',
               display: 'flex',
               alignItems: 'center',
-              gap: '16px'
+              gap: '16px',
+              minWidth: 0,
+              boxSizing: 'border-box'
             }}>
               <div style={{
                 width: '48px',
@@ -122,11 +124,12 @@ export default function Dashboard({ setActiveTab, setScriptPreset, jobs }) {
                 color: m.color,
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                flexShrink: 0
               }}>
                 <Icon size={24} />
               </div>
-              <div>
+              <div style={{ minWidth: 0, overflow: 'hidden' }}>
                 <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>{m.label}</div>
                 <div style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', marginTop: '2px' }}>{m.val}</div>
               </div>
@@ -136,7 +139,7 @@ export default function Dashboard({ setActiveTab, setScriptPreset, jobs }) {
       </div>
 
       {/* Quick-Start Presets */}
-      <div style={{ marginBottom: '36px' }}>
+      <div style={{ marginBottom: '36px', width: '100%' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
           <div>
             <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>Quick Start Demonstration Presets</h2>
@@ -144,7 +147,7 @@ export default function Dashboard({ setActiveTab, setScriptPreset, jobs }) {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', width: '100%' }}>
           {samplePresets.map((sample, idx) => (
             <div
               key={idx}
@@ -158,6 +161,8 @@ export default function Dashboard({ setActiveTab, setScriptPreset, jobs }) {
                 borderRadius: 'var(--radius-md)',
                 border: '1px solid var(--border-light)',
                 boxShadow: 'var(--shadow-sm)',
+                minWidth: 0,
+                boxSizing: 'border-box',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
                 position: 'relative'
