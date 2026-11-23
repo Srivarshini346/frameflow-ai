@@ -85,8 +85,21 @@ class VideoEngine:
         """
         target_w, target_h = self.RESOLUTIONS[aspect_ratio]
         footage = scene.selected_footage
-        if not footage or not footage.local_path or not Path(footage.local_path).exists():
+        if not footage:
             raise VideoRenderError(f"Local footage file missing for scene {scene.scene_number}")
+
+        if not footage.local_path or not Path(footage.local_path).exists():
+            # Check if a cached mock clip is available for offline render
+            theme_key = footage.tags[1] if len(footage.tags) > 1 else "default"
+            mock_path = settings.storage_dir / "mock_clips" / f"mock_{theme_key}_1.mp4"
+            if mock_path.exists():
+                footage.local_path = str(mock_path)
+            else:
+                any_mocks = list((settings.storage_dir / "mock_clips").glob("*.mp4"))
+                if any_mocks:
+                    footage.local_path = str(any_mocks[0])
+                else:
+                    raise VideoRenderError(f"Local footage file missing for scene {scene.scene_number}")
 
         ffmpeg_exe = settings.get_ffmpeg_path()
         duration = max(1.0, scene.duration)

@@ -53,7 +53,7 @@ class PixabayProvider(FootageProviderBase):
         params = {
             "key": settings.pixabay_api_key,
             "q": query,
-            "per_page": limit,
+            "per_page": max(3, min(200, limit)),
             "safesearch": "true"
         }
         if orientation:
