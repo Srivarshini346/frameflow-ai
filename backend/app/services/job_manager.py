@@ -364,22 +364,23 @@ class JobManager:
 
             total_items = max(1, len(aspect_ratios) * len(scenes) + len(aspect_ratios))
             completed_items = 0
+            current_pct = 70
             render_sem = asyncio.Semaphore(4)
 
             for ar in aspect_ratios:
                 ratio_tag = ar.value.replace(":", "_")
                 
                 async def _render_clip(sc: SceneDetail):
-                    nonlocal completed_items
+                    nonlocal completed_items, current_pct
                     clip_out = str(job_dir / f"clip_sc{sc.scene_number}_{ratio_tag}.mp4")
                     async with render_sem:
                         await asyncio.to_thread(video_engine.render_scene_clip, sc, ar, clip_out)
                     completed_items += 1
-                    pct = min(92, int(70 + (completed_items / total_items) * 22))
+                    current_pct = min(92, int(70 + (completed_items / total_items) * 22))
                     self._update_stage(
                         job_id,
                         f"rendering_videos ({completed_items}/{len(scenes)} {ar.value})",
-                        pct
+                        current_pct
                     )
                     return (sc.scene_number, clip_out)
 
@@ -389,7 +390,7 @@ class JobManager:
                 clip_paths = [r[1] for r in clip_results]
 
                 # Assemble full ratio video
-                self._update_stage(job_id, f"assembling_video ({ar.value})", min(94, pct + 2))
+                self._update_stage(job_id, f"assembling_video ({ar.value})", min(94, current_pct + 2))
                 await asyncio.sleep(0.01)
 
                 final_video_path = str(job_dir / f"video_{ratio_tag}.mp4")
