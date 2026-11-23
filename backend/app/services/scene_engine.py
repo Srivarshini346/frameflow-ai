@@ -49,33 +49,27 @@ class SceneEngine:
         if not phrases:
             phrases = [clean_text]
 
-        # 2. Distribute duration based on word/character weighting
+        # 2. Distribute duration based on proportional word/character cumulative weighting
         weights = [max(1.0, len(p.split()) + len(p) * 0.1) for p in phrases]
         total_weight = sum(weights)
 
         raw_scenes: List[Dict[str, Any]] = []
-        cur_t = 0.0
+        cum_w = 0.0
 
         for i, phrase in enumerate(phrases):
-            fraction = weights[i] / total_weight
-            dur = max(1.0, round(total_audio_duration * fraction, 2))
-            
-            if i == len(phrases) - 1:
-                end_t = round(total_audio_duration, 2)
-                dur = max(1.0, round(end_t - cur_t, 2))
-            else:
-                end_t = round(cur_t + dur, 2)
+            start_t = round((cum_w / total_weight) * total_audio_duration, 2)
+            cum_w += weights[i]
+            end_t = round((cum_w / total_weight) * total_audio_duration, 2) if i < len(phrases) - 1 else round(total_audio_duration, 2)
+            dur = max(0.1, round(end_t - start_t, 2))
 
             raw_scenes.append({
                 "phrase": phrase,
-                "start": cur_t,
+                "start": start_t,
                 "end": end_t,
                 "duration": dur
             })
-            cur_t = end_t
 
-        # 3. Enforce min_scene_duration by merging short fragments (< 2.5s)
-        # For long-form scripts (> 90s), scale min_dur gracefully (up to 6s) to ensure cinematic pacing and avoid 100+ micro-scenes
+        # 3. Enforce min_scene_duration by merging short fragments (< min_dur)
         effective_min_dur = settings.min_scene_duration
         if total_audio_duration > 90.0:
             effective_min_dur = max(settings.min_scene_duration, min(6.0, total_audio_duration / 45.0))
@@ -146,14 +140,15 @@ class SceneEngine:
         if merged and accum["duration"] < min_dur:
             merged[-1]["phrase"] = merged[-1]["phrase"] + " " + accum["phrase"]
             merged[-1]["end"] = round(total_audio_duration, 2)
-            merged[-1]["duration"] = round(merged[-1]["end"] - merged[-1]["start"], 2)
+            merged[-1]["duration"] = max(0.1, round(merged[-1]["end"] - merged[-1]["start"], 2))
         else:
             merged.append(accum)
 
-        # Guarantee last scene touches total duration
+        # Guarantee bounds: start at 0.0, end at total_audio_duration
         if merged:
+            merged[0]["start"] = 0.0
             merged[-1]["end"] = round(total_audio_duration, 2)
-            merged[-1]["duration"] = round(merged[-1]["end"] - merged[-1]["start"], 2)
+            merged[-1]["duration"] = max(0.1, round(merged[-1]["end"] - merged[-1]["start"], 2))
 
         return merged
 

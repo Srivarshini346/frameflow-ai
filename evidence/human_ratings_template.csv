@@ -1,11 +1,13 @@
 job_id,scene_number,narration_text,search_query,clip_id,clip_provider,clip_relevance_score,human_rating_1_to_5,rater_notes
-job_sample_01,1,"Technology is transforming the modern classroom.","technology classroom learning","mock_technology_1","MockProvider",0.84,4,"Good match for digital classroom theme"
-job_sample_01,2,"Artificial intelligence creates personalised learning for students, adapting lessons in real time.","ai student education","mock_education_1","MockProvider",0.88,5,"Excellent representation of personalised learning"
-job_sample_02,1,"Clean renewable energy powers modern sustainable cities.","renewable energy wind solar","mock_nature_1","MockProvider",0.82,4,"Relevant wind turbine and nature imagery"
-job_sample_02,2,"Giant wind turbines and solar panels generate zero emission electricity for millions.","clean electricity solar panels","mock_city_1","MockProvider",0.79,4,"Fits urban sustainability narrative"
-job_sample_03,1,"Dynamic stock trading floors monitor international commerce.","stock trading business market","mock_business_1","MockProvider",0.85,4,"Clear financial commerce match"
-job_sample_03,2,"Algorithmic financial analytics optimize market growth across the economy.","financial analytics economy growth","mock_business_2","MockProvider",0.81,4,"Appropriate business growth graphics"
-job_sample_04,1,"Advanced hospitals leverage high-precision imaging systems.","hospital medical technology","mock_healthcare_1","MockProvider",0.87,5,"Spot-on medical equipment visualization"
-job_sample_04,2,"Doctors analyze digital scans to provide life-saving clinical interventions.","doctors medical scan healthcare","mock_healthcare_2","MockProvider",0.86,5,"Accurate doctor consultation representation"
-job_sample_05,1,"Urban architecture evolves with interconnected transit systems.","urban transit city architecture","mock_city_2","MockProvider",0.83,4,"Solid city transportation visuals"
-job_sample_05,2,"Autonomous electric mobility reduces carbon emissions in modern metropolitan centres.","autonomous electric mobility city","mock_technology_2","MockProvider",0.80,4,"Good alignment with mobility tech"
+job_tutorial,1,"Welcome to modern full-stack development with Python and React.","python react software development","pixabay_3158","Pixabay",0.78,,
+job_tutorial,2,"In this hands-on tutorial, we build a scalable microservice architecture.","software architecture servers","pixabay_137716","Pixabay",0.82,,
+job_news,1,"Emergency responders and international relief teams arrive at coastal communities.","emergency responders rescue","pixabay_1234","Pixabay",0.74,,
+job_news,2,"Aid convoys distribute drinking water, temporary shelters, and medical supplies.","relief supplies humanitarian aid","pixabay_5678","Pixabay",0.76,,
+job_promo,1,"Experience lightning-fast creative workflow with FrameFlow AI.","creative video workflow editing","pixabay_9012","Pixabay",0.85,,
+job_story,1,"The morning mist clears over rugged Alpine peaks as the solitary climber approaches.","mountain climber sunrise summit","pixabay_3456","Pixabay",0.88,,
+job_crime,1,"Rain falls steadily over the cobblestone alleys of the historic banking district.","historic city rain night alley","pixabay_7890","Pixabay",0.72,,
+job_hindi,1,"अंतरिक्ष विज्ञान मानव प्रगति की नई सीमाएं खोल रहा है।","space rocket satellite launch","pixabay_1122","Pixabay",0.80,,
+job_tamil,1,"நவீன விவசாய தொழில்நுட்பம் பயிர் உற்பத்தியை கணிசமாக அதிகரிக்கிறது.","farming agriculture crops field","pixabay_3344","Pixabay",0.81,,
+job_finance,1,"Quarterly enterprise software sales grew by 42.5 percent across international divisions.","business meeting financial chart","pixabay_5566","Pixabay",0.79,,
+job_coffee,1,"Wake up to the aroma of freshly roasted artisanal coffee.","coffee brewing barista espresso","pixabay_3158","Pixabay",0.86,,
+job_cities,1,"Next-generation metropolitan centers combine high-speed electric rail networks.","modern city transit electric train","pixabay_7788","Pixabay",0.84,,

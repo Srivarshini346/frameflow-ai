@@ -89,12 +89,14 @@ async def run_pack():
         }
         csv_rows.append(row)
 
-    with open(output_csv, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(csv_rows)
+    for out_target in (output_csv, BASE_DIR / "test_pack" / "results.csv"):
+        out_target.parent.mkdir(parents=True, exist_ok=True)
+        with open(out_target, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(csv_rows)
 
-    print(f"\nTest Pack execution complete! Saved {len(csv_rows)} rows to {output_csv}")
+    print(f"\nTest Pack execution complete! Saved {len(csv_rows)} rows to {output_csv} and test_pack/results.csv")
 
 if __name__ == "__main__":
     asyncio.run(run_pack())
