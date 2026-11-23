@@ -119,7 +119,15 @@ class RulesQueryAdapter(QueryAdapterBase):
                 "Concrete coffee domain extraction"
             )
 
-        # 3. Numbers & Statistics ("sales grew 40% in 2025")
+        # 3. Data center concrete domain heuristic
+        if "data center" in lower or "data centers" in lower or "server rack" in lower:
+            return (
+                f"{visual_style} shot: modern enterprise data center server racks with blinking network lights",
+                ["data center server racks", "modern server room hardware", "data center cables lights"],
+                "Concrete data center physical visual mapping"
+            )
+
+        # 4. Numbers & Statistics ("sales grew 40% in 2025")
         has_stats = bool(re.search(r'\b\d+(?:\.\d+)?%?\b', phrase)) or any(w in lower for w in ("revenue", "quarterly", "sales grew", "profit", "metrics"))
         if has_stats and any(w in lower for w in ("grow", "sales", "revenue", "percent", "fiscal", "year", "quarter")):
             return (

@@ -40,7 +40,7 @@ class Settings(BaseModel):
     ffmpeg_binary: str = os.getenv("FFMPEG_BINARY", "")
 
     # ASR (Transcription) Configuration
-    asr_provider: str = os.getenv("ASR_PROVIDER", "faster-whisper")  # "faster-whisper" or "mock"
+    asr_provider: str = os.getenv("ASR_PROVIDER", "faster_whisper")  # "faster_whisper", "faster-whisper", or "mock"
     asr_model_size: str = os.getenv("ASR_MODEL_SIZE", "base")
     asr_device: str = os.getenv("ASR_DEVICE", "cpu")
 
@@ -50,7 +50,7 @@ class Settings(BaseModel):
     # Query & Relevance Scorer Configuration
     query_provider: str = os.getenv("QUERY_PROVIDER", "rules")  # "rules", "llm", or "mock"
     relevance_scorer: str = os.getenv("RELEVANCE_SCORER", "clip")  # "clip" or "mock"
-    relevance_min: float = float(os.getenv("RELEVANCE_MIN", "0.40"))
+    relevance_min: float = float(os.getenv("RELEVANCE_MIN", "0.25"))
 
     # Footage Provider API keys (Optional)
     pexels_api_key: str = os.getenv("PEXELS_API_KEY", "")

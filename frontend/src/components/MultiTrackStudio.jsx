@@ -438,29 +438,7 @@ export default function MultiTrackStudio({ currentJob, currentResult, currentJob
               {activeDim.label}
             </span>
 
-            {/* Subtitle Overlay Preview */}
-            {activeScene && (
-              <div style={{
-                position: 'absolute',
-                bottom: '16px',
-                left: '16px',
-                right: '16px',
-                textAlign: 'center',
-                pointerEvents: 'none'
-              }}>
-                <span style={{
-                  backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                  color: '#FFFFFF',
-                  padding: '4px 12px',
-                  borderRadius: '4px',
-                  fontSize: selectedRatio === '9:16' ? '12px' : '14px',
-                  fontWeight: 600,
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.4)'
-                }}>
-                  {activeScene.narration_text}
-                </span>
-              </div>
-            )}
+            {/* Native Video Player (Captions burned-in directly into MP4 via FFmpeg, no duplicate overlay) */}
           </div>
 
           {/* Transport / Scrubber Controls Bar */}

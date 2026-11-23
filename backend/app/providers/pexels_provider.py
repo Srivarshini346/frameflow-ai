@@ -56,7 +56,7 @@ class PexelsProvider(FootageProviderBase):
             async with httpx.AsyncClient(timeout=10.0) as client:
                 res = await client.get(self.BASE_URL, headers=headers, params=params)
                 if res.status_code != 200:
-                    logger.warning(f"Pexels API responded with status {res.status_code}")
+                    logger.warning(f"Pexels API responded with status {res.status_code}: {res.text[:200]}")
                     return []
 
                 data = res.json()

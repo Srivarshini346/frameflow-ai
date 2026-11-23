@@ -119,6 +119,11 @@ class VideoValidator:
             if has_black_frames:
                 warnings.append("Black frames detected in rendered video sequence")
 
+            # Freeze frame check
+            has_frozen_frames = self._detect_frozen_frames(video_path)
+            if has_frozen_frames:
+                warnings.append("Frozen frames detected in rendered video sequence")
+
             report = {
                 "file_size_bytes": file_size,
                 "video_codec": video_stream.get("codec_name"),
@@ -128,6 +133,7 @@ class VideoValidator:
                 "fps": round(fps_val, 2),
                 "duration_seconds": round(dur, 3),
                 "black_frames_detected": has_black_frames,
+                "frozen_frames_detected": has_frozen_frames,
                 "checks_passed": {
                     "container_valid": True,
                     "resolution": resolution_ok,
@@ -172,6 +178,19 @@ class VideoValidator:
         try:
             res = subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.DEVNULL, text=True, timeout=10)
             return "black_start" in res.stderr
+        except Exception:
+            return False
+
+    def _detect_frozen_frames(self, video_path: str) -> bool:
+        ffmpeg_exe = settings.get_ffmpeg_path()
+        cmd = [
+            ffmpeg_exe, "-i", video_path,
+            "-vf", "freezedetect=n=0.003:d=3",
+            "-f", "null", "-"
+        ]
+        try:
+            res = subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.DEVNULL, text=True, timeout=10)
+            return "freeze_start" in res.stderr
         except Exception:
             return False
 

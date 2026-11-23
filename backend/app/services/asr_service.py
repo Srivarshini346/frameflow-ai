@@ -163,7 +163,7 @@ class FasterWhisperASRAdapter(ASRAdapterBase):
         )
 
 def get_asr_adapter() -> ASRAdapterBase:
-    if settings.asr_provider == "faster-whisper":
+    if settings.asr_provider.lower() in ("faster_whisper", "faster-whisper"):
         try:
             return FasterWhisperASRAdapter(model_size=settings.asr_model_size, device=settings.asr_device)
         except Exception:

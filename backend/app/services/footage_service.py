@@ -192,6 +192,60 @@ class FootageService:
         )
         return selected_clip
 
+    def check_candidate_clip_quality(self, file_path: Path) -> Tuple[bool, str]:
+        """
+        Samples up to 3 frames per candidate with ffmpeg:
+        - Rejects candidates with mean luma < 25 (underexposed/black).
+        - Rejects candidates with > 95% near-black pixels/frames (< 15 luma).
+        - Rejects near-static noise (e.g. black clip with few white dots).
+        """
+        if not file_path.exists():
+            return False, "File does not exist"
+
+        import tempfile
+        from PIL import Image
+
+        ffmpeg_exe = settings.get_ffmpeg_path()
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            frame_pattern = str(tmp_path / "frame_%02d.jpg")
+            cmd = [
+                ffmpeg_exe, "-y",
+                "-i", str(file_path),
+                "-vf", "fps=1",
+                "-vframes", "3",
+                frame_pattern
+            ]
+            try:
+                subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=8)
+                frames = list(tmp_path.glob("frame_*.jpg"))
+                if not frames:
+                    return True, "Quality check bypassed (frame extraction unsupported)"
+
+                lumas = []
+                for f_img in frames:
+                    with Image.open(f_img) as im:
+                        gray = im.convert("L").resize((64, 64))
+                        pixels = list(gray.getdata())
+                        mean_luma = sum(pixels) / max(1, len(pixels))
+                        lumas.append(mean_luma)
+                        near_black = sum(1 for p in pixels if p < 15)
+                        if (near_black / len(pixels)) > 0.95:
+                            return False, "Candidate clip has > 95% near-black pixels (black screen / white dots)"
+
+                avg_luma = sum(lumas) / max(1, len(lumas))
+                if avg_luma < 25.0:
+                    return False, f"Candidate clip mean luma too low ({avg_luma:.1f} < 25.0); underexposed or black clip"
+
+                # Check static noise / flat dark frames
+                if len(lumas) >= 2 and (max(lumas) - min(lumas) < 1.0) and avg_luma < 35.0:
+                    return False, f"Near-static noise clip detected (mean luma {avg_luma:.1f} with zero variance)"
+
+                return True, "Quality check passed"
+            except Exception as e:
+                logger.warning(f"Clip quality check warning: {e}")
+                return True, "Quality check bypassed"
+
     def validate_video_file(self, file_path: Path) -> bool:
         """
         Validates that a video file on disk is not truncated, 0-byte, 48-byte, or corrupt.
@@ -250,8 +304,13 @@ class FootageService:
                                 f.write(chunk)
 
                         if self.validate_video_file(target_file):
-                            clip.local_path = str(target_file)
-                            return str(target_file)
+                            is_good_q, q_err = self.check_candidate_clip_quality(target_file)
+                            if is_good_q:
+                                clip.local_path = str(target_file)
+                                return str(target_file)
+                            else:
+                                logger.warning(f"Downloaded clip {clip.clip_id} rejected by visual quality check: {q_err}")
+                                target_file.unlink(missing_ok=True)
                         else:
                             logger.warning(f"Downloaded file for {clip.clip_id} was corrupt or invalid container.")
                             target_file.unlink(missing_ok=True)

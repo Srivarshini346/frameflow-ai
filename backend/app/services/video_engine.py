@@ -326,6 +326,10 @@ class VideoEngine:
         for sc in scenes:
             all_warnings.extend(sc.warnings)
 
+        asr_label = "MockASRAdapter (Offline / Zero-Key Test Mode)" if settings.asr_provider == "mock" else f"faster-whisper-{settings.asr_model_size} ({settings.asr_device})"
+        relevance_label = "Keyword overlap similarity heuristic (Unclamped)" if settings.relevance_scorer == "mock" else f"OpenCLIP ViT-B/32 Cosine Similarity"
+        tts_label = "MockTTSAdapter (Offline Mode)" if settings.tts_provider == "mock" else f"{settings.tts_provider} TTS Engine"
+
         manifest = {
             "job_id": job_id,
             "engine": settings.app_name,
@@ -336,9 +340,9 @@ class VideoEngine:
             "stage_timings": stage_timings or {},
             "estimated_cost_usd": estimated_cost,
             "models_and_providers": {
-                "asr_transcription": f"{settings.asr_provider} ({settings.asr_model_size})",
-                "tts_speech": settings.tts_provider,
-                "relevance_scoring": f"CLIP image-text similarity ({settings.relevance_scorer})",
+                "asr_transcription": asr_label,
+                "tts_speech": tts_label,
+                "relevance_scoring": relevance_label,
                 "video_compositor": "FFmpeg 30fps H.264 / AAC Native Compositor",
                 "smart_crop": settings.smart_crop_method
             },

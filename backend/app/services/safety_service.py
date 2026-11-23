@@ -114,7 +114,7 @@ class SafetyService:
         - Rejects celebratory/graphic clips if sensitive news
         - Rejects realistic AI faces
         """
-        text_corpus = (" ".join(clip.tags) + " " + clip.attribution + " " + clip.clip_id).lower()
+        text_corpus = (" ".join(clip.tags) + " " + clip.attribution + " " + clip.clip_id + " " + (clip.source_url or "")).lower()
 
         # Check avoid terms
         for term in avoid_list:
