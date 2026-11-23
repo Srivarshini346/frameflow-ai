@@ -1,0 +1,92 @@
+[
+  {
+    "id": "tutorial",
+    "title": "Software Developer Tutorial",
+    "language": "en",
+    "duration_target": "30s",
+    "script": "Welcome to modern full-stack development with Python and React. In this hands-on tutorial, we build a scalable microservice architecture with async task queues and automated video compositing.",
+    "expected_themes": ["technology", "education"],
+    "min_scenes": 2
+  },
+  {
+    "id": "news_summary",
+    "title": "Breaking News & Humanitarian Response",
+    "language": "en",
+    "duration_target": "45s",
+    "script": "Emergency responders and international relief teams arrive at coastal communities following heavy seasonal flooding. Aid convoys distribute drinking water, temporary shelters, and medical supplies to affected families.",
+    "expected_themes": ["news", "nature"],
+    "min_scenes": 2
+  },
+  {
+    "id": "product_promo",
+    "title": "Next-Gen AI Hardware Promo",
+    "language": "en",
+    "duration_target": "20s",
+    "script": "Experience lightning-fast creative workflow with FrameFlow AI. From narration script to multi-aspect cinematic deliverables in seconds, intelligent video creation has never been simpler.",
+    "expected_themes": ["business", "technology"],
+    "min_scenes": 2
+  },
+  {
+    "id": "story",
+    "title": "Mountain Explorer Narrative",
+    "language": "en",
+    "duration_target": "60s",
+    "script": "The morning mist clears over rugged Alpine peaks as the solitary climber approaches the summit ridge. After hours of steady ascent through freezing winds, the breathtaking panorama of sunrise unfolds across the horizon.",
+    "expected_themes": ["nature"],
+    "min_scenes": 2
+  },
+  {
+    "id": "crime_story_5min",
+    "title": "The Midnight Vault Heist – Crime Mystery (5 Minutes)",
+    "language": "en",
+    "duration_target": "300s",
+    "script": "Rain falls steadily over the cobblestone alleys of the historic banking district. Under the cover of a fierce thunderstorm, shadowy figures disable the high-voltage perimeter sensors of the central vault. Inside the subterranean corridor, laser tripwires crisscross the cold marble floor. The master locksmith bypasses the heavy titanium tumblers with millimeter precision. An eerie silence fills the chamber as the heavy vault door swings open on silent hinges. But deep within the police surveillance center, automated alarms flicker to life on glowing computer monitors. Detective Vance grabs his trench coat and radios the pursuit units idling in the dark avenue. Squad cars tear through empty midnight streets with sirens echoing off glass skyscraper towers. Tire tracks lead towards an abandoned industrial shipping warehouse beside the foggy river docks. Flashing red and blue lights surround the rusted metal gates as tactical officers take perimeter positions in the pouring rain. Inside the warehouse, heavy wooden crates sit stacked beside a waiting black speed boat on the dark waters. Footsteps scramble across the iron catwalk above as the suspects attempt an escape across the wet rooftop. Cornered against the dark river skyline, the suspects surrender under blinding searchlight beams. The stolen centuries-old diamonds are secured safely inside evidence lockboxes as dawn breaks over the city skyline.",
+    "expected_themes": ["city", "business"],
+    "min_scenes": 2
+  },
+  {
+    "id": "hindi_space",
+    "title": "Hindi Voiceover – Space Exploration (भारतीय अंतरिक्ष अनुसंधान)",
+    "language": "hi",
+    "duration_target": "30s",
+    "script": "अंतरिक्ष विज्ञान मानव प्रगति की नई सीमाएं खोल रहा है। भारतीय वैज्ञानिक उन्नत उपग्रहों और शक्तिशाली रॉकेटों के माध्यम से ब्रह्मांड के रहस्यों की खोज कर रहे हैं।",
+    "expected_themes": ["technology", "nature"],
+    "min_scenes": 2
+  },
+  {
+    "id": "tamil_agriculture",
+    "title": "Tamil Voiceover – Smart Farming (நவீன இயற்கை விவசாயம்)",
+    "language": "ta",
+    "duration_target": "30s",
+    "script": "நவீன விவசாய தொழில்நுட்பம் பயிர் உற்பத்தியை கணிசமாக அதிகரிக்கிறது. இயற்கை உரங்களும் சொட்டு நீர்ப்பாசன முறைகளும் தமிழ்நாட்டு விவசாயிகளுக்கு புதிய வளத்தை தருகின்றன.",
+    "expected_themes": ["nature", "education"],
+    "min_scenes": 2
+  },
+  {
+    "id": "financial_report",
+    "title": "Global Economic Metrics Review",
+    "language": "en",
+    "duration_target": "40s",
+    "script": "Quarterly enterprise software sales grew by 42.5 percent across international divisions. Disciplined balance sheet allocation and strategic capital expenditure strengthened operating margins for fiscal year 2026.",
+    "expected_themes": ["business"],
+    "min_scenes": 2
+  },
+  {
+    "id": "coffee_lifestyle",
+    "title": "Artisanal Morning Coffee Ritual",
+    "language": "en",
+    "duration_target": "15s",
+    "script": "Wake up to the aroma of freshly roasted artisanal coffee. Discover pure flavor, calm morning focus, and handcrafted quality in every cup.",
+    "expected_themes": ["coffee"],
+    "min_scenes": 2
+  },
+  {
+    "id": "smart_cities",
+    "title": "Autonomous Mobility & Smart Urban Design",
+    "language": "en",
+    "duration_target": "45s",
+    "script": "Next-generation metropolitan centers combine high-speed electric rail networks with autonomous vehicle lanes. Sustainable architectural design creates green walkable urban spaces for the future.",
+    "expected_themes": ["city", "technology"],
+    "min_scenes": 2
+  }
+]
