@@ -309,3 +309,47 @@ def test_19_concurrent_jobs_without_collision():
     id1 = res1.json()["job_id"]
     id2 = res2.json()["job_id"]
     assert id1 != id2
+
+# 20. Bad clip & corrupt download rejection
+def test_20_black_frame_and_corrupt_download_rejection(tmp_path):
+    import subprocess
+    from app.services.footage_service import footage_service
+    # 1. Corrupt 48-byte file rejected
+    corrupt_file = tmp_path / "corrupt_48b.mp4"
+    corrupt_file.write_bytes(b"0" * 48)
+    assert not footage_service.validate_video_file(corrupt_file)
+
+    # 2. Non-existent file rejected
+    assert not footage_service.validate_video_file(tmp_path / "missing.mp4")
+
+    # 3. Pure black frame candidate rejected by luma check
+    ffmpeg_exe = settings.get_ffmpeg_path()
+    black_clip = tmp_path / "pure_black.mp4"
+    subprocess.run([
+        ffmpeg_exe, "-y",
+        "-f", "lavfi", "-i", "color=c=black:s=320x240:d=1.5",
+        "-c:v", "libx264", "-t", "1.5",
+        str(black_clip)
+    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    if black_clip.exists():
+        is_good, reason = footage_service.check_candidate_clip_quality(black_clip)
+        assert not is_good, "Candidate with pure black frames must be rejected by luma/quality check"
+        assert "luma" in reason.lower() or "black" in reason.lower()
+
+# 21. Readiness probe and providers status endpoint
+def test_21_readiness_probe_endpoints():
+    res_ready = client.get("/ready")
+    assert res_ready.status_code == 200
+    data = res_ready.json()
+    assert "ready" in data
+    assert "checks" in data
+    assert "ffmpeg" in data["checks"]
+    assert "storage" in data["checks"]
+    assert "database" in data["checks"]
+
+    res_prov = client.get("/api/v1/providers")
+    assert res_prov.status_code == 200
+    p_data = res_prov.json()
+    assert "providers" in p_data
+    assert len(p_data["providers"]) >= 2
