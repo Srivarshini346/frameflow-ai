@@ -22,7 +22,9 @@ class IdempotencyManager:
 
     def _init_db(self):
         with self._lock:
-            with sqlite3.connect(self._db_path) as conn:
+            with sqlite3.connect(self._db_path, timeout=30.0) as conn:
+                conn.execute("PRAGMA journal_mode=WAL;")
+                conn.execute("PRAGMA busy_timeout=30000;")
                 conn.execute("""
                     CREATE TABLE IF NOT EXISTS idempotency_records (
                         idempotency_key TEXT PRIMARY KEY,

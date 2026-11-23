@@ -37,7 +37,9 @@ class JobManager:
         self._init_db()
 
     def _init_db(self):
-        with sqlite3.connect(self._db_path) as conn:
+        with sqlite3.connect(self._db_path, timeout=30.0) as conn:
+            conn.execute("PRAGMA journal_mode=WAL;")
+            conn.execute("PRAGMA busy_timeout=30000;")
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS jobs (
                     job_id TEXT PRIMARY KEY,
@@ -501,26 +503,35 @@ class JobManager:
     def _persist(self, job_id: str):
         job = self._jobs[job_id]
         import json
-        with sqlite3.connect(self._db_path) as conn:
-            conn.execute("""
-                INSERT OR REPLACE INTO jobs (job_id, correlation_id, status, progress, stage, created_at, updated_at, error, data_json)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                job_id,
-                job["correlation_id"],
-                job["status"].value if isinstance(job["status"], JobStatus) else job["status"],
-                job["progress"],
-                job["stage"],
-                job["created_at"],
-                job["updated_at"],
-                job.get("error"),
-                json.dumps(job, default=str)
-            ))
-            conn.commit()
+        for attempt in range(5):
+            try:
+                with sqlite3.connect(self._db_path, timeout=30.0) as conn:
+                    conn.execute("PRAGMA busy_timeout=30000;")
+                    conn.execute("""
+                        INSERT OR REPLACE INTO jobs (job_id, correlation_id, status, progress, stage, created_at, updated_at, error, data_json)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        job_id,
+                        job["correlation_id"],
+                        job["status"].value if isinstance(job["status"], JobStatus) else job["status"],
+                        job["progress"],
+                        job["stage"],
+                        job["created_at"],
+                        job["updated_at"],
+                        job.get("error"),
+                        json.dumps(job, default=str)
+                    ))
+                    conn.commit()
+                break
+            except sqlite3.OperationalError as e:
+                if attempt < 4:
+                    time.sleep(0.05 * (attempt + 1))
+                else:
+                    logger.warning(f"Could not persist job {job_id} to DB: {e}")
 
     def _load_from_db(self, job_id: str) -> Optional[Dict[str, Any]]:
         import json
-        with sqlite3.connect(self._db_path) as conn:
+        with sqlite3.connect(self._db_path, timeout=30.0) as conn:
             cur = conn.execute("SELECT data_json FROM jobs WHERE job_id = ?", (job_id,))
             row = cur.fetchone()
             if row:
@@ -533,7 +544,7 @@ class JobManager:
 
     def list_recent_jobs(self, limit: int = 20) -> List[Dict[str, Any]]:
         import json
-        with sqlite3.connect(self._db_path) as conn:
+        with sqlite3.connect(self._db_path, timeout=30.0) as conn:
             cur = conn.execute("SELECT data_json FROM jobs ORDER BY created_at DESC LIMIT ?", (limit,))
             rows = cur.fetchall()
             return [json.loads(r[0]) for r in rows]

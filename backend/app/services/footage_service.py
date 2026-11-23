@@ -226,7 +226,7 @@ class FootageService:
                 for f_img in frames:
                     with Image.open(f_img) as im:
                         gray = im.convert("L").resize((64, 64))
-                        pixels = list(gray.getdata())
+                        pixels = list(gray.tobytes())
                         mean_luma = sum(pixels) / max(1, len(pixels))
                         lumas.append(mean_luma)
                         near_black = sum(1 for p in pixels if p < 15)
