@@ -15,8 +15,8 @@ export default function CreateStudio({ scriptPreset, setActiveTab, setCurrentJob
   const [speechRate, setSpeechRate] = useState(1.0);
   const [pitch, setPitch] = useState(0.0);
 
-  // Aspect Ratios (all selected by default)
-  const [aspectRatios, setAspectRatios] = useState(['16:9', '9:16', '1:1']);
+  // Aspect Ratios (16:9 selected by default for 3x faster turnaround)
+  const [aspectRatios, setAspectRatios] = useState(['16:9']);
   
   // Visual & Prompts
   const [visualStyle, setVisualStyle] = useState('cinematic');
@@ -97,6 +97,47 @@ export default function CreateStudio({ scriptPreset, setActiveTab, setCurrentJob
         <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
           Configure narration, style guidelines, aspect ratios, and captions to produce your AI B-roll video.
         </p>
+      </div>
+
+      {/* Engine Status & Speed Banner */}
+      <div style={{
+        backgroundColor: 'var(--bg-card)',
+        border: '1px solid var(--border-light)',
+        borderRadius: 'var(--radius-md)',
+        padding: '14px 18px',
+        marginBottom: '24px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        fontSize: '13px',
+        boxShadow: 'var(--shadow-sm)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Sparkles size={18} color="var(--primary)" />
+          <div>
+            <strong style={{ color: 'var(--text-primary)' }}>Stock Footage Engine: </strong>
+            <span style={{ color: 'var(--text-secondary)' }}>
+              High-resolution CC0 Stock Photography with smooth Ken Burns motion active. Add free <code>PEXELS_API_KEY</code> in <code>.env</code> for live stock video downloads.
+            </span>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setActiveTab('licences')}
+          style={{
+            fontSize: '12px',
+            color: 'var(--primary)',
+            background: 'var(--primary-light)',
+            padding: '6px 12px',
+            borderRadius: 'var(--radius-sm)',
+            fontWeight: 700,
+            whiteSpace: 'nowrap',
+            border: 'none',
+            cursor: 'pointer'
+          }}
+        >
+          Check API Keys & Licences &rarr;
+        </button>
       </div>
 
       {error && (

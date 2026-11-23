@@ -41,9 +41,9 @@ class CaptionService:
     ) -> str:
         """
         Builds FFmpeg subtitle filter with responsive font sizing and background styling.
-        Escapes Windows backslashes and colons properly for FFmpeg.
+        Uses basename to avoid drive-letter colon conflicts when running with cwd=job_dir.
         """
-        escaped_path = srt_path.replace("\\", "/").replace(":", "\\:")
+        srt_name = Path(srt_path).name
         
         # Adjust font size for vertical portrait vs landscape
         size = caption_config.font_size
@@ -63,6 +63,6 @@ class CaptionService:
             f"Alignment=2,"
             f"MarginV=40"
         )
-        return f"subtitles='{escaped_path}':force_style='{style}'"
+        return f"subtitles='{srt_name}':force_style='{style}'"
 
 caption_service = CaptionService()

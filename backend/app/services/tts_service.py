@@ -44,13 +44,39 @@ class GTTSAdapter(TTSAdapterBase):
         return "MIT License (gTTS Package)"
 
     async def synthesize(self, text: str, voice_config: VoiceConfig, output_path: str) -> Dict[str, Any]:
+        import hashlib
+        import shutil
         from gtts import gTTS
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         lang_code = voice_config.language.value
 
+        # Local cache check
+        cache_dir = settings.storage_dir / "tts_cache"
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        cache_key = hashlib.sha256(f"{text}_{lang_code}_{voice_config.speech_rate}".encode()).hexdigest()
+        cache_file = cache_dir / f"{cache_key}.mp3"
+
+        if cache_file.exists() and cache_file.stat().st_size > 1000:
+            shutil.copy2(cache_file, output_path)
+            duration = self._probe_duration(output_path)
+            logger.info(f"Loaded cached TTS audio ({duration}s) for language '{lang_code}'")
+            return {
+                "duration": duration,
+                "provider": self.name,
+                "licence": self.licence,
+                "audio_path": output_path,
+                "language": lang_code
+            }
+
         tts = gTTS(text=text, lang=lang_code, slow=voice_config.speech_rate < 0.85)
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(None, tts.save, output_path)
+
+        # Save to cache
+        try:
+            shutil.copy2(output_path, cache_file)
+        except Exception:
+            pass
 
         # Probe duration using wave or ffprobe
         duration = self._probe_duration(output_path)

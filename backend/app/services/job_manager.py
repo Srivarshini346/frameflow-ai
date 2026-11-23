@@ -338,11 +338,16 @@ class JobManager:
 
             # 5. FFmpeg Video Compositor for All Requested Aspect Ratios
             t5 = time.time()
-            self._update_stage(job_id, "rendering_videos", 75)
-            ratios_raw = req.get("aspect_ratios", ["16:9", "9:16", "1:1"])
+            self._update_stage(job_id, "rendering_videos", 70)
+            await asyncio.sleep(0.01)
+
+            ratios_raw = req.get("aspect_ratios", ["16:9"])
             aspect_ratios = [AspectRatio(r.value if hasattr(r, "value") else r) for r in ratios_raw]
             video_urls: Dict[str, str] = {}
             validation_reports: Dict[str, Any] = {}
+
+            total_items = max(1, len(aspect_ratios) * len(scenes) + len(aspect_ratios))
+            completed_items = 0
 
             for ar in aspect_ratios:
                 ratio_tag = ar.value.replace(":", "_")
@@ -350,12 +355,24 @@ class JobManager:
                 clip_paths = []
                 for sc in scenes:
                     clip_out = str(job_dir / f"clip_sc{sc.scene_number}_{ratio_tag}.mp4")
-                    video_engine.render_scene_clip(sc, ar, clip_out)
+                    await asyncio.to_thread(video_engine.render_scene_clip, sc, ar, clip_out)
                     clip_paths.append(clip_out)
+                    completed_items += 1
+                    pct = min(92, int(70 + (completed_items / total_items) * 22))
+                    self._update_stage(
+                        job_id,
+                        f"rendering_videos (Scene {sc.scene_number}/{len(scenes)} {ar.value})",
+                        pct
+                    )
+                    await asyncio.sleep(0.01)
 
                 # Assemble full ratio video
+                self._update_stage(job_id, f"assembling_video ({ar.value})", min(94, pct + 2))
+                await asyncio.sleep(0.01)
+
                 final_video_path = str(job_dir / f"video_{ratio_tag}.mp4")
-                video_engine.assemble_full_video(
+                await asyncio.to_thread(
+                    video_engine.assemble_full_video,
                     scene_clip_paths=clip_paths,
                     audio_path=audio_path,
                     srt_path=srt_path,
@@ -365,8 +382,9 @@ class JobManager:
                     job_dir=job_dir
                 )
 
+                completed_items += 1
                 # Post-render FFprobe automated quality validation
-                val = video_validator.validate_video(final_video_path, expected_ar=ar.value)
+                val = await asyncio.to_thread(video_validator.validate_video, final_video_path, expected_ar=ar.value)
                 validation_reports[ar.value] = val.to_dict()
 
                 # Upload to MinIO/S3 or Local Storage

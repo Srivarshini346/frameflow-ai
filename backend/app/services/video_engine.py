@@ -169,17 +169,18 @@ class VideoEngine:
 
         with open(concat_list_file, "w", encoding="utf-8") as f:
             for p in scene_clip_paths:
-                clean_p = p.replace("\\", "/")
-                f.write(f"file '{clean_p}'\n")
+                f.write(f"file '{Path(p).name}'\n")
 
         has_subtitles = caption_config.burn_in and Path(srt_path).exists()
-        
+        audio_abs = str(Path(audio_path).resolve().as_posix())
+        out_name = Path(output_video_path).name
+
         base_cmd = [
             ffmpeg_exe, "-y",
             "-f", "concat",
             "-safe", "0",
-            "-i", str(concat_list_file),
-            "-i", audio_path
+            "-i", concat_list_file.name,
+            "-i", audio_abs
         ]
 
         if has_subtitles:
@@ -194,9 +195,9 @@ class VideoEngine:
                     "-b:a", "192k",
                     "-shortest",
                     "-movflags", "+faststart",
-                    output_video_path
+                    out_name
                 ]
-                res = subprocess.run(cmd_with_subs, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                res = subprocess.run(cmd_with_subs, cwd=str(job_dir), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
                 if res.returncode == 0:
                     logger.info(f"Assembled video with burned subtitles ({aspect_ratio.value}) -> {output_video_path}")
                     return output_video_path
@@ -214,11 +215,11 @@ class VideoEngine:
             "-b:a", "192k",
             "-shortest",
             "-movflags", "+faststart",
-            output_video_path
+            out_name
         ]
 
         logger.info(f"Assembling full video ({aspect_ratio.value}) -> {output_video_path}")
-        res = subprocess.run(cmd_clean, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        res = subprocess.run(cmd_clean, cwd=str(job_dir), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         if res.returncode != 0:
             logger.error(f"FFmpeg assembly failed: {res.stderr}")
             raise VideoRenderError(f"Assembly failed for {aspect_ratio.value}: {res.stderr[:200]}")

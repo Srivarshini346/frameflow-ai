@@ -33,7 +33,7 @@ class StorageService:
                     region_name=settings.s3_region,
                     config=Config(signature_version="s3v4")
                 )
-                # Ensure bucket exists
+                # Ensure bucket exists / endpoint is reachable
                 try:
                     self._s3_client.head_bucket(Bucket=settings.s3_bucket_name)
                 except Exception:
@@ -41,7 +41,9 @@ class StorageService:
                         self._s3_client.create_bucket(Bucket=settings.s3_bucket_name)
                         logger.info(f"Created S3/MinIO bucket '{settings.s3_bucket_name}'")
                     except Exception as e:
-                        logger.warning(f"Could not auto-create S3 bucket: {e}")
+                        logger.warning(f"Could not reach S3/MinIO endpoint ({e}). Disabling S3 upload and using local storage.")
+                        self._s3_client = None
+                        return
                 logger.info(f"Initialized MinIO/S3 client at {settings.s3_endpoint_url} (bucket: {settings.s3_bucket_name})")
             except Exception as err:
                 logger.warning(f"Failed to initialize S3 client ({err}). Using local storage.")
@@ -76,7 +78,8 @@ class StorageService:
                 )
                 return f"{settings.s3_endpoint_url}/{settings.s3_bucket_name}/{object_key}"
             except Exception as e:
-                logger.warning(f"S3 upload error for {object_key}: {e}. Falling back to local URL.")
+                logger.warning(f"S3 upload error for {object_key}: {e}. Disabling S3 for subsequent files and using local storage.")
+                self._s3_client = None
 
         return self.get_public_url(str(path))
 
