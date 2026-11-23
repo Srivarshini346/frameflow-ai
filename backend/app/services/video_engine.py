@@ -117,12 +117,14 @@ class VideoEngine:
 
         cmd = [
             ffmpeg_exe, "-y",
+            "-threads", "2",
             "-stream_loop", "-1",
             "-i", footage.local_path,
             "-t", str(duration),
             "-vf", vf_filter,
             "-c:v", "libx264",
             "-preset", "ultrafast",
+            "-tune", "zerolatency",
             "-crf", "22",
             "-an",
             output_clip_path
@@ -201,8 +203,10 @@ class VideoEngine:
                 sub_filter = caption_service.build_subtitle_filter(srt_path, caption_config, aspect_ratio.value)
                 cmd_with_subs = base_cmd + [
                     "-vf", sub_filter,
+                    "-threads", "0",
                     "-c:v", "libx264",
                     "-preset", "ultrafast",
+                    "-tune", "zerolatency",
                     "-crf", "23",
                     "-c:a", "aac",
                     "-b:a", "192k",
@@ -221,8 +225,10 @@ class VideoEngine:
 
         # Assemble clean video
         cmd_clean = base_cmd + [
+            "-threads", "0",
             "-c:v", "libx264",
             "-preset", "ultrafast",
+            "-tune", "zerolatency",
             "-crf", "23",
             "-c:a", "aac",
             "-b:a", "192k",

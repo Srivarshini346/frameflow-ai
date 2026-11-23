@@ -355,9 +355,12 @@ export default function CreateStudio({ scriptPreset, setActiveTab, setCurrentJob
             border: '1px solid var(--border-light)',
             boxShadow: 'var(--shadow-sm)'
           }}>
-            <h2 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h2 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Film size={18} color="var(--primary)" /> Target Aspect Ratios
             </h2>
+            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '14px' }}>
+              For 3–5 min videos, selecting 16:9 gives ~3x faster generation.
+            </p>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {[

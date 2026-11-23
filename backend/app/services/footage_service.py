@@ -242,20 +242,21 @@ class FootageService:
         # Download from external URL
         logger.info(f"Downloading clip {clip.clip_id} from {clip.download_url}")
         try:
-            async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
-                res = await client.get(clip.download_url)
-                if res.status_code == 200 and len(res.content) >= 1024:
-                    with open(target_file, "wb") as f:
-                        f.write(res.content)
-                    
-                    if self.validate_video_file(target_file):
-                        clip.local_path = str(target_file)
-                        return str(target_file)
+            async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
+                async with client.stream("GET", clip.download_url) as resp:
+                    if resp.status_code == 200:
+                        with open(target_file, "wb") as f:
+                            async for chunk in resp.aiter_bytes(chunk_size=65536):
+                                f.write(chunk)
+
+                        if self.validate_video_file(target_file):
+                            clip.local_path = str(target_file)
+                            return str(target_file)
+                        else:
+                            logger.warning(f"Downloaded file for {clip.clip_id} was corrupt or invalid container.")
+                            target_file.unlink(missing_ok=True)
                     else:
-                        logger.warning(f"Downloaded file for {clip.clip_id} was corrupt or invalid container.")
-                        target_file.unlink(missing_ok=True)
-                else:
-                    logger.warning(f"Download returned status {res.status_code} or payload size {len(res.content)}B was too small.")
+                        logger.warning(f"Download returned status {resp.status_code}")
         except Exception as e:
             logger.warning(f"Download exception for {clip.clip_id}: {e}")
 

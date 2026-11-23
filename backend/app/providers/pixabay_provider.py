@@ -79,8 +79,16 @@ class PixabayProvider(FootageProviderBase):
                         continue
 
                     videos_dict = hit.get("videos", {})
-                    # Prefer large or medium
-                    target_stream = videos_dict.get("large") or videos_dict.get("medium") or videos_dict.get("small")
+                    large_stream = videos_dict.get("large")
+                    medium_stream = videos_dict.get("medium")
+                    small_stream = videos_dict.get("small")
+
+                    # If large is 4K UHD (width > 1920) and medium is available, use medium to save 75% download time
+                    if large_stream and large_stream.get("width", 0) > 1920 and medium_stream:
+                        target_stream = medium_stream
+                    else:
+                        target_stream = large_stream or medium_stream or small_stream
+
                     if not target_stream or not target_stream.get("url"):
                         continue
 

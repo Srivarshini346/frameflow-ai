@@ -305,21 +305,37 @@ class JobManager:
             self._persist(job_id)
             stage_timings["scene_segmentation"] = round(time.time() - t2, 3)
 
-            # 3. Footage Discovery & Licensing
+            # 3. Footage Discovery & Licensing (Concurrent Download Pool)
             t3 = time.time()
-            self._update_stage(job_id, "sourcing_footage", 50)
+            self._update_stage(job_id, "sourcing_footage", 40)
             seen_clips: Set[str] = set()
-            ratios_raw = req.get("aspect_ratios", ["16:9", "9:16", "1:1"])
+            ratios_raw = req.get("aspect_ratios", ["16:9"])
             primary_ratio = str(ratios_raw[0].value if hasattr(ratios_raw[0], "value") else ratios_raw[0]) if ratios_raw else "16:9"
 
+            # 3A. Select best footage for each scene
             for sc in scenes:
                 clip = await footage_service.find_best_footage_for_scene(
                     sc, seen_clips, avoid_list=avoid_list, aspect_ratio=primary_ratio
                 )
-                local_path = await footage_service.ensure_clip_downloaded(clip, job_dir)
-                thumb_file = job_dir / f"thumb_scene_{sc.scene_number}.jpg"
-                if video_engine.extract_scene_thumbnail(local_path, str(thumb_file)):
-                    sc.thumbnail_url = f"/storage/jobs/{job_id}/thumb_scene_{sc.scene_number}.jpg"
+                seen_clips.add(clip.clip_id)
+
+            # 3B. Concurrent download & thumbnail generation (up to 6 parallel workers)
+            dl_sem = asyncio.Semaphore(6)
+            total_sc = len(scenes)
+            dl_count = 0
+
+            async def _download_and_thumb(sc: SceneDetail):
+                nonlocal dl_count
+                async with dl_sem:
+                    local_path = await footage_service.ensure_clip_downloaded(sc.selected_footage, job_dir)
+                    thumb_file = job_dir / f"thumb_scene_{sc.scene_number}.jpg"
+                    if await asyncio.to_thread(video_engine.extract_scene_thumbnail, local_path, str(thumb_file)):
+                        sc.thumbnail_url = f"/storage/jobs/{job_id}/thumb_scene_{sc.scene_number}.jpg"
+                    dl_count += 1
+                    pct = min(64, int(40 + (dl_count / max(1, total_sc)) * 24))
+                    self._update_stage(job_id, f"sourcing_footage ({dl_count}/{total_sc})", pct)
+
+            await asyncio.gather(*[_download_and_thumb(sc) for sc in scenes])
 
             job["scenes"] = [s.dict() for s in scenes]
             self._persist(job_id)
@@ -336,7 +352,7 @@ class JobManager:
             job["caption_config"] = caption_cfg
             stage_timings["caption_generation"] = round(time.time() - t4, 3)
 
-            # 5. FFmpeg Video Compositor for All Requested Aspect Ratios
+            # 5. FFmpeg Video Compositor for All Requested Aspect Ratios (Parallel 4-Worker Pool)
             t5 = time.time()
             self._update_stage(job_id, "rendering_videos", 70)
             await asyncio.sleep(0.01)
@@ -348,23 +364,29 @@ class JobManager:
 
             total_items = max(1, len(aspect_ratios) * len(scenes) + len(aspect_ratios))
             completed_items = 0
+            render_sem = asyncio.Semaphore(4)
 
             for ar in aspect_ratios:
                 ratio_tag = ar.value.replace(":", "_")
-                # Render clips for each scene
-                clip_paths = []
-                for sc in scenes:
+                
+                async def _render_clip(sc: SceneDetail):
+                    nonlocal completed_items
                     clip_out = str(job_dir / f"clip_sc{sc.scene_number}_{ratio_tag}.mp4")
-                    await asyncio.to_thread(video_engine.render_scene_clip, sc, ar, clip_out)
-                    clip_paths.append(clip_out)
+                    async with render_sem:
+                        await asyncio.to_thread(video_engine.render_scene_clip, sc, ar, clip_out)
                     completed_items += 1
                     pct = min(92, int(70 + (completed_items / total_items) * 22))
                     self._update_stage(
                         job_id,
-                        f"rendering_videos (Scene {sc.scene_number}/{len(scenes)} {ar.value})",
+                        f"rendering_videos ({completed_items}/{len(scenes)} {ar.value})",
                         pct
                     )
-                    await asyncio.sleep(0.01)
+                    return (sc.scene_number, clip_out)
+
+                tasks = [_render_clip(sc) for sc in scenes]
+                clip_results = await asyncio.gather(*tasks)
+                clip_results.sort(key=lambda x: x[0])
+                clip_paths = [r[1] for r in clip_results]
 
                 # Assemble full ratio video
                 self._update_stage(job_id, f"assembling_video ({ar.value})", min(94, pct + 2))

@@ -75,7 +75,11 @@ class SceneEngine:
             cur_t = end_t
 
         # 3. Enforce min_scene_duration by merging short fragments (< 2.5s)
-        merged_scenes = self._merge_short_scenes(raw_scenes, settings.min_scene_duration, total_audio_duration)
+        # For long-form scripts (> 90s), scale min_dur gracefully (up to 6s) to ensure cinematic pacing and avoid 100+ micro-scenes
+        effective_min_dur = settings.min_scene_duration
+        if total_audio_duration > 90.0:
+            effective_min_dur = max(settings.min_scene_duration, min(6.0, total_audio_duration / 45.0))
+        merged_scenes = self._merge_short_scenes(raw_scenes, effective_min_dur, total_audio_duration)
 
         # 4. Formulate visual intent, disambiguate homonyms, apply safety guard
         final_scenes: List[SceneDetail] = []
